@@ -1,0 +1,31 @@
+{
+  "name": "electron-webpack-quick-start",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "dev": "electron-webpack dev",
+    "compile": "electron-webpack",
+    "dist": "yarn compile && electron-builder",
+    "dist:dir": "yarn dist --dir -c.compression=store -c.mac.identity=null"
+  },
+  "dependencies": {
+    "active-win": "^6.1.0",
+    "execa": "^4.0.0",
+    "flatbush": "^3.3.0",
+    "jimp": "^0.10.3",
+    "opencv-wasm": "^4.3.0-0.3.0",
+    "pureimage": "^0.2.1",
+    "source-map-support": "^0.5.16"
+  },
+  "devDependencies": {
+    "@types/flatbush": "^3.1.0",
+    "@types/jimp": "^0.2.28",
+    "@types/node": "12",
+    "electron": "8.2.0",
+    "electron-builder": "^22.4.1",
+    "electron-webpack": "^2.8.2",
+    "electron-webpack-ts": "^4.0.1",
+    "typescript": "^3.8.3",
+    "webpack": "~4.42.1"
+  }
+}
