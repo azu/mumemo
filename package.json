@@ -10,10 +10,19 @@
     "dist:dir": "yarn dist --dir -c.compression=store -c.mac.identity=null",
     "prettier": "prettier --write \"**/*.{js,jsx,ts,tsx,css}\""
   },
+  "electronWebpack": {
+    "whiteListedModules": [
+      "codemirror",
+      "hypermd"
+    ]
+  },
   "dependencies": {
     "active-win": "^6.1.0",
+    "codemirror": "^5.53.2",
+    "electron-positioner": "^4.1.0",
     "execa": "^4.0.0",
     "flatbush": "^3.3.0",
+    "hypermd": "^0.3.11",
     "jimp": "^0.10.3",
     "opencv-wasm": "^4.3.0-0.3.0",
     "pureimage": "^0.2.1",
@@ -29,6 +38,7 @@
     "electron-builder": "^22.4.1",
     "electron-webpack": "^2.8.2",
     "electron-webpack-ts": "^4.0.1",
+    "electron-window-state": "^5.0.3",
     "husky": "^4.2.5",
     "lint-staged": "^10.2.0",
     "prettier": "^2.0.5",

@@ -1,12 +1,13 @@
-import { app, globalShortcut, Notification, nativeImage, screen } from "electron";
+import { app, globalShortcut, nativeImage, Notification, screen } from "electron";
 import execa from "execa";
-import { getReactFromImage, getReactFromImageResult } from "./detect";
+import { getReactFromImage, getReactFromImageResult, getReactFromImageResults } from "./detect";
 import fs from "fs";
 import Flatbush from "flatbush";
 import activeWin from "active-win";
 import Jimp from "jimp";
 import * as path from "path";
 import tmp from "tmp";
+import { PreviewBrowser } from "./PreviewBrowser";
 
 const PImage = require("pureimage");
 // const fnt = PImage.registerFont("~/Library/Fonts/Ricty-Bold.ttf", "Source Sans Pro");
@@ -157,7 +158,7 @@ function writePureImage<T extends any>(debugImage: T, fileName: string) {
     return new Promise((resolve, reject) => {
         PImage.encodePNGToStream(debugImage, fs.createWriteStream(fileName))
             .then(() => {
-                console.log("done writing");
+                console.log("done writing", fileName);
                 resolve();
             })
             .catch((error: any) => {
@@ -166,6 +167,173 @@ function writePureImage<T extends any>(debugImage: T, fileName: string) {
     });
 }
 
+function readPureImage(fileName: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+        PImage.decodePNGFromStream(fs.createReadStream(fileName))
+            .then((img: any) => {
+                console.log("done reading", fileName);
+                resolve(img);
+            })
+            .catch((error: any) => {
+                reject(error);
+            });
+    });
+}
+
+async function screenshot({
+    DEBUG,
+    screenshotFileName,
+    windowId,
+}: {
+    DEBUG: boolean;
+    screenshotFileName: string;
+    windowId?: string;
+}): Promise<{ results: getReactFromImageResults }> {
+    await execa("screencapture", (windowId ? ["-o", "-l", windowId] : ["-o"]).concat(screenshotFileName));
+    const results = await getReactFromImage(screenshotFileName, {
+        debugOutputPath: DEBUG ? path.join(config.debugOutputDir, "step2.png") : undefined,
+    });
+    return { results };
+}
+
+// @ts-ignore
+function listenNotificationReply({
+    screenshotFileName,
+    body,
+    timeoutMs,
+}: {
+    screenshotFileName: string;
+    body: string;
+    timeoutMs: number;
+}): Promise<void | String> {
+    return new Promise((resolve) => {
+        let isInputting = false;
+        const notification = new Notification({
+            title: "mumemo",
+            body: body,
+            icon: nativeImage.createFromPath(screenshotFileName),
+            hasReply: true,
+        });
+        notification.addListener("reply", (event, input) => {
+            console.log("event, input", event);
+            resolve(input);
+        });
+        notification.show();
+        setTimeout(() => {
+            if (isInputting) {
+                return;
+            }
+            console.log("timeout");
+            notification.close();
+            resolve();
+        }, timeoutMs);
+    });
+}
+
+const createFocusImage = async ({
+    DEBUG,
+    screenshotFileName,
+    results,
+    currentScreenBounce,
+    currentScreenSize,
+    currentAbsolutePoint,
+    displayScaleFactor,
+    boundRatio,
+}: {
+    DEBUG: boolean;
+    screenshotFileName: string;
+    results: getReactFromImageResults;
+    currentScreenBounce: { x: number; y: number };
+    currentScreenSize: { width: number; height: number };
+    currentAbsolutePoint: { x: number; y: number };
+    displayScaleFactor: number;
+    boundRatio: number;
+}) => {
+    const img = await readPureImage(screenshotFileName);
+    const debugImage = DEBUG ? PImage.make(img.width, img.height) : ({} as any);
+    const context = DEBUG ? debugImage.getContext("2d") : ({} as any);
+    if (DEBUG) {
+        context.drawImage(
+            img,
+            0,
+            0,
+            img.width,
+            img.height, // source dimensions
+            0,
+            0,
+            img.width,
+            img.height // destination dimensions
+        );
+    }
+    const filteredRects = results.filter((result) => {
+        if (result.area < 100) {
+            return false;
+        }
+        if (result.arcLength < 100) {
+            return false;
+        }
+        if (result.rect.height < 8) {
+            return false;
+        }
+        // if (result.rect.height < 30) {
+        //     return false;
+        // }
+        const screenBoxAreaLimit = currentScreenSize.width * currentScreenSize.height * 0.8;
+        if (result.area > screenBoxAreaLimit) {
+            return false;
+        }
+        return true;
+    });
+    const relativePointCursorInScreen = {
+        x: Math.abs(currentScreenBounce.x - currentAbsolutePoint.x * displayScaleFactor),
+        y: Math.abs(currentScreenBounce.y - currentAbsolutePoint.y * displayScaleFactor),
+    };
+    // Draw Cursor
+    if (DEBUG) {
+        console.log("currentScreenBounce", currentScreenBounce);
+        console.log("currentAbsolutePoint", currentAbsolutePoint);
+        console.log("displayScaleFactor", displayScaleFactor);
+        console.log("relativePointCursorInScreen", relativePointCursorInScreen);
+        context.fillStyle = "rgba(255,0,255, 1)";
+        context.fillRect(relativePointCursorInScreen.x, relativePointCursorInScreen.y, 25, 25);
+    }
+    const { wrapperRect } = await calculateWrapperRect({
+        rects: filteredRects,
+        relativePoint: relativePointCursorInScreen,
+        boundRatio: boundRatio,
+        debugContext: context,
+        debugImage,
+        DEBUG: DEBUG,
+    });
+    if (DEBUG) {
+        context.fillStyle = "rgba(0,255,255,0.5)";
+        context.fillRect(
+            wrapperRect.minX,
+            wrapperRect.minY,
+            wrapperRect.maxX - wrapperRect.minX,
+            wrapperRect.maxY - wrapperRect.minY
+        );
+    }
+    // debug
+    if (DEBUG) {
+        await writePureImage(debugImage, path.join(config.debugOutputDir, "step4.png"));
+    }
+    // result
+    const image = await Jimp.read(screenshotFileName);
+    // avoid overlap
+    const imageWidth = image.getWidth();
+    const imageHeight = image.getHeight();
+    image.crop(
+        wrapperRect.minX,
+        wrapperRect.minY,
+        Math.min(imageWidth - wrapperRect.minX, wrapperRect.maxX - wrapperRect.minX),
+        Math.min(imageHeight - wrapperRect.minY, wrapperRect.maxY - wrapperRect.minY)
+    );
+    const outputFilePath = path.join(config.outputDir, "output.png");
+    image.write(outputFilePath);
+    return outputFilePath;
+};
+
 app.on("ready", () => {
     const DEBUG = config.DEBUG;
     const boundRatio = config.boundRatio;
@@ -173,6 +341,12 @@ app.on("ready", () => {
     let processing = false;
     const ret = globalShortcut.register(config.shortcutKey, async () => {
         console.log(`${config.shortcutKey} is pressed`);
+        const currentAbsolutePoint = screen.getCursorScreenPoint();
+        const currentScreen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+        const currentScreenSize = currentScreen.size;
+        const currentScreenBounce = currentScreen.bounds;
+        const displayScaleFactor = currentScreen.scaleFactor;
+        const activeInfo = activeWin.sync();
         const temporaryScreenShot = tmp.fileSync({
             prefix: "mumemo",
             postfix: ".png",
@@ -182,118 +356,31 @@ app.on("ready", () => {
                 return;
             }
             processing = true;
-            const currentAbsolutePoint = screen.getCursorScreenPoint();
-            const currentScreen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
-            const currentScreenSize = currentScreen.size;
-            const currentScreenBounce = currentScreen.bounds;
-            const displayScaleFactor = currentScreen.scaleFactor;
-            const activeInfo = activeWin.sync();
-            const id = String(activeInfo?.id);
+            const windowId = String(activeInfo?.id);
+            if (DEBUG) {
+                console.log("active info", activeInfo);
+            }
             const screenshotFileName = DEBUG ? path.join(config.debugOutputDir, "step1.png") : temporaryScreenShot.name;
-            await execa("screencapture", (id ? ["-o", "-l", id] : ["-o"]).concat(screenshotFileName));
-            const results = await getReactFromImage(screenshotFileName, {
-                debugOutputPath: DEBUG ? path.join(config.debugOutputDir, "step2.png") : undefined,
+            const { results } = await screenshot({
+                DEBUG,
+                screenshotFileName,
+                windowId,
             });
-            const notification = new Notification({
-                title: "mumemo",
-                body: "update memo",
-                icon: nativeImage.createFromPath(screenshotFileName),
-                hasReply: true,
+            const previewBrowser = PreviewBrowser.instance();
+            console.log(previewBrowser);
+            previewBrowser.show();
+            const outputImagePromise = createFocusImage({
+                DEBUG,
+                results,
+                displayScaleFactor,
+                currentAbsolutePoint,
+                currentScreenBounce,
+                currentScreenSize,
+                screenshotFileName,
+                boundRatio,
             });
-            notification.addListener("reply", (event, index) => {
-                console.log(event, index);
-            });
-            notification.show();
-            await new Promise((resolve, reject) => {
-                PImage.decodePNGFromStream(fs.createReadStream(screenshotFileName)).then(async (img: any) => {
-                    const debugImage = DEBUG ? PImage.make(img.width, img.height) : ({} as any);
-                    const context = DEBUG ? debugImage.getContext("2d") : ({} as any);
-                    if (DEBUG) {
-                        context.drawImage(
-                            img,
-                            0,
-                            0,
-                            img.width,
-                            img.height, // source dimensions
-                            0,
-                            0,
-                            img.width,
-                            img.height // destination dimensions
-                        );
-                    }
-                    const filteredRects = results.filter((result) => {
-                        if (result.area < 100) {
-                            return false;
-                        }
-                        if (result.arcLength < 100) {
-                            return false;
-                        }
-                        if (result.rect.height < 8) {
-                            return false;
-                        }
-                        // if (result.rect.height < 30) {
-                        //     return false;
-                        // }
-                        const screenBoxAreaLimit = currentScreenSize.width * currentScreenSize.height * 0.8;
-                        if (result.area > screenBoxAreaLimit) {
-                            return false;
-                        }
-                        return true;
-                    });
-                    const relativePointCursorInScreen = {
-                        x: Math.abs(currentScreenBounce.x - currentAbsolutePoint.x * displayScaleFactor),
-                        y: Math.abs(currentScreenBounce.y - currentAbsolutePoint.y * displayScaleFactor),
-                    };
-                    // Draw Cursor
-                    if (DEBUG) {
-                        console.log("currentScreenBounce", currentScreenBounce);
-                        console.log("currentAbsolutePoint", currentAbsolutePoint);
-                        console.log("displayScaleFactor", displayScaleFactor);
-                        console.log("relativePointCursorInScreen", relativePointCursorInScreen);
-                        context.fillStyle = "rgba(255,0,255, 1)";
-                        context.fillRect(relativePointCursorInScreen.x, relativePointCursorInScreen.y, 25, 25);
-                    }
-                    const { wrapperRect } = await calculateWrapperRect({
-                        rects: filteredRects,
-                        relativePoint: relativePointCursorInScreen,
-                        boundRatio: boundRatio,
-                        debugContext: context,
-                        debugImage,
-                        DEBUG: DEBUG,
-                    });
-                    if (DEBUG) {
-                        context.fillStyle = "rgba(0,255,255,0.5)";
-                        context.fillRect(
-                            wrapperRect.minX,
-                            wrapperRect.minY,
-                            wrapperRect.maxX - wrapperRect.minX,
-                            wrapperRect.maxY - wrapperRect.minY
-                        );
-                    }
-                    // debug
-                    if (DEBUG) {
-                        try {
-                            await writePureImage(debugImage, path.join(config.debugOutputDir, "step4.png"));
-                        } catch (error) {
-                            reject(error);
-                        }
-                    }
-                    // result
-                    {
-                        const image = await Jimp.read(screenshotFileName);
-                        // avoid overlap
-                        const imageWidth = image.getWidth();
-                        const imageHeight = image.getHeight();
-                        image.crop(
-                            wrapperRect.minX,
-                            wrapperRect.minY,
-                            Math.min(imageWidth - wrapperRect.minX, wrapperRect.maxX - wrapperRect.minX),
-                            Math.min(imageHeight - wrapperRect.minY, wrapperRect.maxY - wrapperRect.minY)
-                        );
-                        image.write(path.join(config.outputDir, "output.png"));
-                    }
-                    resolve();
-                });
+            await Promise.all([outputImagePromise]).then(([outputFilePath, input]) => {
+                console.log(outputFilePath, input);
             });
         } catch (error) {
             console.error(error);
@@ -313,8 +400,7 @@ app.on("ready", () => {
 
 app.on("will-quit", () => {
     // Unregister a shortcut.
-    globalShortcut.unregister("CommandOrControl+X");
-
+    globalShortcut.unregister(config.shortcutKey);
     // Unregister all shortcuts.
     globalShortcut.unregisterAll();
 });
