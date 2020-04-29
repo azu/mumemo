@@ -147,7 +147,7 @@ type Config = {
     boundRatio: number;
 };
 const config: Config = {
-    DEBUG: true,
+    DEBUG: false,
     outputDir: app.getPath("downloads"),
     debugOutputDir: app.getPath("downloads"),
     shortcutKey: "CommandOrControl+Shift+X",
@@ -331,7 +331,10 @@ const createFocusImage = async ({
     );
     const outputFilePath = path.join(config.outputDir, "output.png");
     image.write(outputFilePath);
-    return outputFilePath;
+    return {
+        outputFilePath,
+        outputImage: image,
+    };
 };
 
 app.on("ready", () => {
@@ -366,10 +369,11 @@ app.on("ready", () => {
                 screenshotFileName,
                 windowId,
             });
-            const previewBrowser = PreviewBrowser.instance();
-            console.log(previewBrowser);
-            previewBrowser.show();
-            const outputImagePromise = createFocusImage({
+            const previewBrowser = await PreviewBrowser.instance();
+            const firstImage = await Jimp.read(screenshotFileName);
+            const firstImageBase64 = await firstImage.getBase64Async("image/png");
+            previewBrowser.edit(``, firstImageBase64);
+            const { outputImage } = await createFocusImage({
                 DEBUG,
                 results,
                 displayScaleFactor,
@@ -379,9 +383,8 @@ app.on("ready", () => {
                 screenshotFileName,
                 boundRatio,
             });
-            await Promise.all([outputImagePromise]).then(([outputFilePath, input]) => {
-                console.log(outputFilePath, input);
-            });
+            const outputImageBase64 = await outputImage.getBase64Async("image/png");
+            previewBrowser.updateImage(outputImageBase64);
         } catch (error) {
             console.error(error);
         } finally {
@@ -393,9 +396,6 @@ app.on("ready", () => {
     if (!ret) {
         console.log("registration failed");
     }
-
-    // Check whether a shortcut is registered.
-    console.log(globalShortcut.isRegistered("CommandOrControl+X"));
 });
 
 app.on("will-quit", () => {

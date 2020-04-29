@@ -16,12 +16,17 @@ export class PreviewBrowser {
         return this.mainWindow === null;
     }
 
-    static instance() {
+    static async instance(): Promise<PreviewBrowser> {
         if (_PreviewBrowser) {
             return _PreviewBrowser;
         }
-        _PreviewBrowser = new PreviewBrowser();
-        return _PreviewBrowser;
+        const instance = new PreviewBrowser();
+        return new Promise((resolve) => {
+            instance.mainWindow?.webContents.on("did-finish-load", function () {
+                _PreviewBrowser = instance;
+                resolve(_PreviewBrowser);
+            });
+        });
     }
 
     constructor() {
@@ -39,7 +44,7 @@ export class PreviewBrowser {
             y: mainWindowState.y,
             width: mainWindowState.width,
             height: mainWindowState.height,
-            webPreferences: { nodeIntegration: true },
+            webPreferences: { nodeIntegration: true, webSecurity: false },
         });
         if (isDevelopment) {
             browserWindow.loadURL(`http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}`);
@@ -65,6 +70,15 @@ export class PreviewBrowser {
         });
         mainWindowState.manage(browserWindow);
         return browserWindow;
+    }
+
+    edit(value: string, imgSrc: string) {
+        this.mainWindow?.webContents.send("update", value, imgSrc);
+        this.show();
+    }
+
+    updateImage(imgSrc: string) {
+        this.mainWindow?.webContents.send("update:image", imgSrc);
     }
 
     show() {
