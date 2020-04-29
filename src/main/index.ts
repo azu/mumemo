@@ -9,8 +9,8 @@ import * as path from "path";
 import tmp from "tmp";
 
 const PImage = require("pureimage");
-const fnt = PImage.registerFont("/Users/azu/Library/Fonts/Ricty-Bold.ttf", "Source Sans Pro");
-fnt.load(() => {});
+// const fnt = PImage.registerFont("~/Library/Fonts/Ricty-Bold.ttf", "Source Sans Pro");
+// fnt.load(() => {});
 
 async function calculateWrapperRect({
     rects,
