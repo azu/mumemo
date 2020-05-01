@@ -1,4 +1,4 @@
-import { app, globalShortcut, nativeImage, Notification, screen } from "electron";
+import { app, globalShortcut, screen } from "electron";
 import execa from "execa";
 import { getReactFromImage, getReactFromImageResult, getReactFromImageResults } from "./detect";
 import fs from "fs";
@@ -180,60 +180,26 @@ function readPureImage(fileName: string): Promise<any> {
     });
 }
 
-async function screenshot({
-    DEBUG,
-    screenshotFileName,
+async function screenshot_({
     windowId,
-}: {
-    DEBUG: boolean;
-    screenshotFileName: string;
-    windowId?: string;
-}): Promise<{ results: getReactFromImageResults }> {
-    await execa("screencapture", (windowId ? ["-o", "-l", windowId] : ["-o"]).concat(screenshotFileName));
-    const results = await getReactFromImage(screenshotFileName, {
-        debugOutputPath: DEBUG ? path.join(config.debugOutputDir, "step2.png") : undefined,
-    });
-    return { results };
-}
-
-// @ts-ignore
-function listenNotificationReply({
     screenshotFileName,
-    body,
-    timeoutMs,
 }: {
+    windowId: string | undefined;
     screenshotFileName: string;
-    body: string;
-    timeoutMs: number;
-}): Promise<void | String> {
-    return new Promise((resolve) => {
-        let isInputting = false;
-        const notification = new Notification({
-            title: "mumemo",
-            body: body,
-            icon: nativeImage.createFromPath(screenshotFileName),
-            hasReply: true,
-        });
-        notification.addListener("reply", (event, input) => {
-            console.log("event, input", event);
-            resolve(input);
-        });
-        notification.show();
-        setTimeout(() => {
-            if (isInputting) {
-                return;
-            }
-            console.log("timeout");
-            notification.close();
-            resolve();
-        }, timeoutMs);
-    });
+}): Promise<boolean> {
+    try {
+        await execa("screencapture", (windowId ? ["-o", "-l", windowId] : ["-o"]).concat(screenshotFileName));
+        return true;
+    } catch (error) {
+        console.error(error);
+        return false;
+    }
 }
 
 const createFocusImage = async ({
     DEBUG,
     screenshotFileName,
-    results,
+    rectangles,
     currentScreenBounce,
     currentScreenSize,
     currentAbsolutePoint,
@@ -242,7 +208,7 @@ const createFocusImage = async ({
 }: {
     DEBUG: boolean;
     screenshotFileName: string;
-    results: getReactFromImageResults;
+    rectangles: getReactFromImageResults;
     currentScreenBounce: { x: number; y: number };
     currentScreenSize: { width: number; height: number };
     currentAbsolutePoint: { x: number; y: number };
@@ -265,7 +231,7 @@ const createFocusImage = async ({
             img.height // destination dimensions
         );
     }
-    const filteredRects = results.filter((result) => {
+    const filteredRects = rectangles.filter((result) => {
         if (result.area < 100) {
             return false;
         }
@@ -364,18 +330,25 @@ app.on("ready", () => {
                 console.log("active info", activeInfo);
             }
             const screenshotFileName = DEBUG ? path.join(config.debugOutputDir, "step1.png") : temporaryScreenShot.name;
-            const { results } = await screenshot({
-                DEBUG,
+            const screenshotSuccess = await screenshot_({
                 screenshotFileName,
-                windowId,
+                windowId: windowId,
             });
+            if (!screenshotSuccess) {
+                return;
+            }
+            const rectangles = await getReactFromImage(screenshotFileName, {
+                debugOutputPath: DEBUG ? path.join(config.debugOutputDir, "step2.png") : undefined,
+            });
+            // Fast Preview
             const previewBrowser = await PreviewBrowser.instance();
             const firstImage = await Jimp.read(screenshotFileName);
             const firstImageBase64 = await firstImage.getBase64Async("image/png");
             previewBrowser.edit(``, firstImageBase64);
+            // Update with Focus Image
             const { outputImage } = await createFocusImage({
                 DEBUG,
-                results,
+                rectangles,
                 displayScaleFactor,
                 currentAbsolutePoint,
                 currentScreenBounce,
@@ -385,6 +358,14 @@ app.on("ready", () => {
             });
             const outputImageBase64 = await outputImage.getBase64Async("image/png");
             previewBrowser.updateImage(outputImageBase64);
+            const input = await previewBrowser.onClose();
+            fs.writeFileSync(
+                path.join(config.outputDir, "README.md"),
+                `![](./output.png)
+
+${input}`,
+                "utf-8"
+            );
         } catch (error) {
             console.error(error);
         } finally {

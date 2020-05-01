@@ -1,7 +1,8 @@
-import { BrowserWindow } from "electron";
+import { BrowserWindow, ipcMain } from "electron";
 import windowStateKeeper from "electron-window-state";
 import path from "path";
 import { format as formatUrl } from "url";
+import { timeout } from "./timeout";
 
 const Positioner = require("electron-positioner");
 
@@ -9,8 +10,32 @@ const isDevelopment = process.env.NODE_ENV !== "production";
 
 let _PreviewBrowser: PreviewBrowser | null = null;
 
+class Deferred<T extends any> {
+    promise: Promise<T>;
+    private _resolve!: (value?: T) => void;
+    private _reject!: (reason?: Error) => void;
+
+    constructor() {
+        this.promise = new Promise((resolve, reject) => {
+            this._resolve = resolve;
+            this._reject = reject;
+        });
+    }
+
+    resolve(value?: any) {
+        this._resolve(value);
+    }
+
+    reject(reason?: Error) {
+        this._reject(reason);
+    }
+}
+
 export class PreviewBrowser {
     private mainWindow: Electron.BrowserWindow | null;
+    private inputValue: string;
+    private closedDeferred: Deferred<void>;
+    private forcusAtOnce: boolean;
 
     get isDeactived() {
         return this.mainWindow === null;
@@ -18,7 +43,7 @@ export class PreviewBrowser {
 
     static async instance(): Promise<PreviewBrowser> {
         if (_PreviewBrowser) {
-            return _PreviewBrowser;
+            return _PreviewBrowser.reset();
         }
         const instance = new PreviewBrowser();
         return new Promise((resolve) => {
@@ -31,6 +56,17 @@ export class PreviewBrowser {
 
     constructor() {
         this.mainWindow = this.createMainWindow();
+        this.inputValue = "";
+        this.closedDeferred = new Deferred<void>();
+        this.forcusAtOnce = false;
+    }
+
+    reset() {
+        this.inputValue = "";
+        this.closedDeferred.resolve();
+        this.closedDeferred = new Deferred<void>();
+        this.forcusAtOnce = false;
+        return this;
     }
 
     createMainWindow() {
@@ -62,11 +98,20 @@ export class PreviewBrowser {
         if (mainWindowState.y === undefined || mainWindowState.x === undefined) {
             positioner.move("topRight");
         }
-        browserWindow.on("close", () => {
+        browserWindow.on("close", (event) => {
+            event.preventDefault();
             this.hide();
+            this.closedDeferred.resolve();
+        });
+        browserWindow.on("focus", () => {
+            this.forcusAtOnce = true;
         });
         browserWindow.on("closed", () => {
             this.mainWindow = null;
+        });
+        ipcMain.on("save", (event, value: string) => {
+            this.inputValue = value;
+            browserWindow.close();
         });
         mainWindowState.manage(browserWindow);
         return browserWindow;
@@ -81,9 +126,27 @@ export class PreviewBrowser {
         this.mainWindow?.webContents.send("update:image", imgSrc);
     }
 
+    // resolve this promise then save text
+    async onClose() {
+        return new Promise((resolve) => {
+            // focus at once, not timeout
+            // timeout -> hide and save -> reset
+            timeout(5000).then(() => {
+                if (!this.forcusAtOnce) {
+                    this.hide();
+                    resolve();
+                }
+            });
+            // save -> save
+            this.closedDeferred.promise.then(() => {
+                resolve(this.inputValue);
+            });
+        });
+    }
+
     show() {
         if (this.mainWindow) {
-            this.mainWindow.show();
+            this.mainWindow.showInactive();
         }
     }
 

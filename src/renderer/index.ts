@@ -18,15 +18,24 @@ app.appendChild(imgDiv);
 const saveButton = document.createElement("button");
 saveButton.className = "saveButton";
 saveButton.textContent = "Save";
-saveButton.addEventListener("click", () => {});
-app.appendChild(saveButton);
-const editor = HyperMD.fromTextArea(textarea);
-editor.on("change", () => {
-    const value = editor.getValue();
-    console.log("value", value);
+
+function save() {
+    ipcRenderer.send("save", editor.getValue());
+}
+
+saveButton.addEventListener("click", () => {
+    save();
 });
+app.appendChild(saveButton);
+const editor = HyperMD.fromTextArea(textarea, {
+    extraKeys: {
+        "Cmd-Enter": function () {
+            save();
+        },
+    },
+});
+
 ipcRenderer.on("update", (event, value: string, imageSrc: string) => {
-    console.log("updateupdateupdateupdate", value);
     editor.setValue(value);
     requestAnimationFrame(() => {
         editor.focus();
