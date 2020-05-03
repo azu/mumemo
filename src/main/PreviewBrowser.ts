@@ -12,9 +12,8 @@ let _PreviewBrowser: PreviewBrowser | null = null;
 
 export class PreviewBrowser {
     private mainWindow: Electron.BrowserWindow | null;
-    private inputValue: string;
-    private closedDeferred: Deferred<void>;
-    private forcusAtOnce: boolean;
+    private closedDeferred: Deferred<string>;
+    private focusAtOnce: boolean;
     private canceled: boolean;
     private timeoutId: NodeJS.Timeout | null;
 
@@ -37,19 +36,16 @@ export class PreviewBrowser {
 
     constructor() {
         this.mainWindow = this.createMainWindow();
-        this.inputValue = "";
-        this.closedDeferred = new Deferred<void>();
-        this.forcusAtOnce = false;
+        this.closedDeferred = new Deferred<string>();
+        this.focusAtOnce = false;
         this.canceled = false;
         this.timeoutId = null;
     }
 
     reset() {
         this.mainWindow?.webContents.send("reset");
-        this.inputValue = "";
-        this.closedDeferred.resolve();
-        this.closedDeferred = new Deferred<void>();
-        this.forcusAtOnce = false;
+        this.closedDeferred = new Deferred<string>();
+        this.focusAtOnce = false;
         this.canceled = false;
         if (this.timeoutId) {
             clearTimeout(this.timeoutId);
@@ -89,17 +85,13 @@ export class PreviewBrowser {
         browserWindow.on("close", (event) => {
             event.preventDefault();
             this.hide();
-            this.closedDeferred.resolve();
+            this.closedDeferred.reject(new Error("Close Window"));
         });
         browserWindow.on("focus", () => {
-            this.forcusAtOnce = true;
+            this.focusAtOnce = true;
         });
         browserWindow.on("closed", () => {
             this.mainWindow = null;
-        });
-        ipcMain.on("save", (event, value: string) => {
-            this.inputValue = value;
-            browserWindow.close();
         });
         mainWindowState.manage(browserWindow);
         return browserWindow;
@@ -107,7 +99,6 @@ export class PreviewBrowser {
 
     edit(value: string, imgSrc: string) {
         this.mainWindow?.webContents.send("update", value, imgSrc);
-        this.show();
     }
 
     updateImage(imgSrc: string) {
@@ -122,24 +113,53 @@ export class PreviewBrowser {
     }
 
     // resolve this promise then save text
-    async onClose(timeoutMs: number): Promise<string> {
-        return new Promise((resolve) => {
+    async onClose({ timeoutMs, autoSave }: { timeoutMs: number; autoSave: boolean }): Promise<string> {
+        const onCancel = () => {
+            this.closedDeferred.reject(new Error("Cancel by user"));
+            this.mainWindow?.close();
+        };
+        const onSave = (_event: any, value: string) => {
+            this.closedDeferred.resolve(value);
+            this.mainWindow?.close();
+        };
+        return new Promise((resolve, reject) => {
+            ipcMain.once("save", onSave);
+            ipcMain.once("cancel", onCancel);
             // focus at once, not timeout
             // timeout -> hide and save -> reset
             this.timeoutId = setTimeout(() => {
-                if (!this.forcusAtOnce && !this.canceled) {
+                if (!this.focusAtOnce && !this.canceled) {
                     this.hide();
-                    resolve();
+                    if (autoSave) {
+                        this.closedDeferred.resolve("");
+                    } else {
+                        this.closedDeferred.reject(new Error("timeout"));
+                    }
                 }
             }, timeoutMs);
             // save -> save
-            this.closedDeferred.promise.then(() => {
-                resolve(this.inputValue);
-            });
+            this.closedDeferred.promise
+                .then((value) => {
+                    resolve(value);
+                })
+                .catch((error) => {
+                    console.log("errorerrorerrorerror", error);
+                    reject(error);
+                })
+                .finally(() => {
+                    ipcMain.off("save", onSave);
+                    ipcMain.off("cancel", onCancel);
+                });
         });
     }
 
     show() {
+        if (this.mainWindow) {
+            this.focusAtOnce = true;
+            this.mainWindow.show();
+        }
+    }
+    showInactive() {
         if (this.mainWindow) {
             this.mainWindow.showInactive();
         }

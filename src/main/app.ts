@@ -13,6 +13,7 @@ import dayjs from "dayjs";
 import shortid from "shortid";
 import sanitize from "sanitize-filename";
 import * as os from "os";
+import { copySelectedText } from "./macos/Keyboard";
 
 const markdownEscapedCharaters = require("markdown-escapes");
 const GfmEscape = require("gfm-escape");
@@ -153,6 +154,9 @@ export type AppConfig = {
     DEBUG: boolean;
     outputDir: string;
     outputContentTemplate: (args: OutputContentTemplateArgs) => string;
+    autoFocus: boolean;
+    autoSave: boolean;
+    autoSaveTimeoutMs: number;
     debugOutputDir: string;
     boundRatio: number;
 };
@@ -176,10 +180,12 @@ const createConfig = ({ app, path }: AppConfigCreatorArgs): AppConfig => {
         // Output Template Function
         outputContentTemplate: ({ imgPath, selectedContent, inputContent }: OutputContentTemplateArgs) => {
             return `![](${imgPath})
-${selectedContent ? `>  ${selectedContent.value.split("\n").join("\n> ")}\n` : ""}
-${inputContent.raw}
-`;
+${selectedContent.value ? `>  ${selectedContent.value.split("\n").join("\n> ")}\n` : ""}
+${inputContent.raw ? inputContent.raw.trimRight() + "\n\n" : ""}`;
         },
+        autoFocus: true,
+        autoSave: true,
+        autoSaveTimeoutMs: 5 * 1000,
         // DEBUG,
         DEBUG: false,
         debugOutputDir: path.join(app.getPath("documents"), "mumemo"),
@@ -359,99 +365,124 @@ export const run = async (config: AppConfig, abortablePromise: Promise<void>) =>
             return fileName;
         },
     };
+    // on abort
+    let isCanceled = false;
+    const cancelTask = async () => {
+        if (isCanceled) {
+            return;
+        }
+        isCanceled = true;
+        const previewBrowser = await PreviewBrowser.instance();
+        previewBrowser.cancel();
+        // clean non-saved files
+        processingState.clean();
+    };
+    abortablePromise.catch(cancelTask);
     const race = <T extends any>(promise: Promise<T>): Promise<T> => {
         // on cancel
-        abortablePromise.catch(async () => {
-            const previewBrowser = await PreviewBrowser.instance();
-            previewBrowser.cancel();
-            // clean non-saved files
-            processingState.clean();
-        });
         return Promise.race([promise, abortablePromise]) as Promise<T>;
     };
-    const DEBUG = config.DEBUG;
-    const currentAbsolutePoint = screen.getCursorScreenPoint();
-    const currentScreen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
-    const currentScreenSize = currentScreen.size;
-    const currentScreenBounce = currentScreen.bounds;
-    const displayScaleFactor = currentScreen.scaleFactor;
-    const activeInfo = activeWin.sync();
-    const temporaryScreenShot = tmp.fileSync({
-        prefix: "mumemo",
-        postfix: ".png",
-    });
-    const windowId = String(activeInfo?.id);
-    console.log("active info", activeInfo);
-    const screenshotFileName = DEBUG ? path.join(config.debugOutputDir, "step1.png") : temporaryScreenShot.name;
-    const screenshotSuccess = await race(
-        screenshot({
+    try {
+        const DEBUG = config.DEBUG;
+        const currentAbsolutePoint = screen.getCursorScreenPoint();
+        const currentScreen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+        const currentScreenSize = currentScreen.size;
+        const currentScreenBounce = currentScreen.bounds;
+        const displayScaleFactor = currentScreen.scaleFactor;
+        const activeInfo = activeWin.sync();
+        const temporaryScreenShot = tmp.fileSync({
+            prefix: "mumemo",
+            postfix: ".png",
+        });
+        const windowId = String(activeInfo?.id);
+        console.log("active info", activeInfo);
+        const screenshotFileName = DEBUG ? path.join(config.debugOutputDir, "step1.png") : temporaryScreenShot.name;
+        const screenshotSuccess = await race(
+            screenshot({
+                screenshotFileName,
+                windowId: windowId,
+            })
+        );
+        if (!screenshotSuccess) {
+            return;
+        }
+        const clipboardTextPromise = copySelectedText();
+        const rectangles = await race(
+            getReactFromImage(screenshotFileName, {
+                debugOutputPath: DEBUG ? path.join(config.debugOutputDir, "step2.png") : undefined,
+            })
+        );
+        // Fast Preview
+        const previewBrowser = await PreviewBrowser.instance();
+        previewBrowser.reset();
+        const firstImage = await Jimp.read(screenshotFileName);
+        const firstImageBase64 = await firstImage.getBase64Async("image/png");
+        previewBrowser.edit(``, firstImageBase64);
+        // get clipboard text and show window as interactive
+        let clipboardText = "";
+        if (config.autoFocus) {
+            clipboardText = (await clipboardTextPromise) || "";
+            previewBrowser.show();
+        } else {
+            previewBrowser.showInactive();
+            clipboardText = (await clipboardTextPromise) || "";
+        }
+        // Update with Focus Image
+        const sanitizeFileName = (name: string): string => {
+            const homedir = os.homedir();
+            const stripedNamed: string = [homedir, markdownEscapedCharaters].reduce((result, escapeCharacter) => {
+                return result.split(escapeCharacter).join("");
+            }, name);
+            const spaceToUnderBar = stripedNamed.replace(/\s/g, "_");
+            return sanitize(spaceToUnderBar);
+        };
+        const createOutputImageFileName = ({ owner, title }: { owner: string; title: string }) => {
+            return `${owner}-${title}-${dayjs().format("YYYY-MM-DD")}-${shortid()}.png`;
+        };
+        const outputImageFileName = sanitizeFileName(
+            createOutputImageFileName({
+                owner: activeInfo?.owner.name ?? "unknown",
+                title: activeInfo?.title ?? "unknown",
+            })
+        );
+        const outputFileName = processingState.use(path.join(config.outputDir, outputImageFileName));
+        const { outputImage } = await createFocusImage({
+            DEBUG,
+            rectangles,
+            displayScaleFactor,
+            currentAbsolutePoint,
+            currentScreenBounce,
+            currentScreenSize,
             screenshotFileName,
-            windowId: windowId,
-        })
-    );
-    if (!screenshotSuccess) {
-        return;
+            outputFileName,
+            boundRatio: config.boundRatio,
+            config,
+        });
+        const outputImageBase64 = await outputImage.getBase64Async("image/png");
+        previewBrowser.updateImage(outputImageBase64);
+        const input = await previewBrowser.onClose({
+            autoSave: config.autoSave,
+            timeoutMs: config.autoSaveTimeoutMs,
+        });
+        const inputContent: OutputContentTemplateArgs["inputContent"] = {
+            raw: input,
+            value: markdownEscaper.escape(input),
+        };
+        const selectedContent: OutputContentTemplateArgs["selectedContent"] = {
+            raw: clipboardText.trim(),
+            value: markdownEscaper.escape(clipboardText.trim()),
+        };
+        fs.appendFileSync(
+            path.join(config.outputDir, "README.md"),
+            config.outputContentTemplate({
+                imgPath: outputImageFileName,
+                inputContent,
+                selectedContent,
+            }),
+            "utf-8"
+        );
+    } catch (error) {
+        // when occur error{timeout,cancel}, cleanup it and suppress error
+        await cancelTask();
     }
-    const rectangles = await race(
-        getReactFromImage(screenshotFileName, {
-            debugOutputPath: DEBUG ? path.join(config.debugOutputDir, "step2.png") : undefined,
-        })
-    );
-    // Fast Preview
-    const previewBrowser = await PreviewBrowser.instance();
-    previewBrowser.reset();
-    const firstImage = await Jimp.read(screenshotFileName);
-    const firstImageBase64 = await firstImage.getBase64Async("image/png");
-    previewBrowser.edit(``, firstImageBase64);
-    // Update with Focus Image
-    const sanitizeFileName = (name: string): string => {
-        const homedir = os.homedir();
-        const stripedNamed: string = [homedir, markdownEscapedCharaters].reduce((result, escapeCharacter) => {
-            return result.split(escapeCharacter).join("");
-        }, name);
-        const spaceToUnderBar = stripedNamed.replace(/\s/g, "_");
-        return sanitize(spaceToUnderBar);
-    };
-    const createOutputImageFileName = ({ owner, title }: { owner: string; title: string }) => {
-        return `${owner}-${title}-${dayjs().format("YYYY-MM-DD")}-${shortid()}.png`;
-    };
-    const outputImageFileName = sanitizeFileName(
-        createOutputImageFileName({
-            owner: activeInfo?.owner.name ?? "unknown",
-            title: activeInfo?.title ?? "unknown",
-        })
-    );
-    const outputFileName = processingState.use(path.join(config.outputDir, outputImageFileName));
-    const { outputImage } = await createFocusImage({
-        DEBUG,
-        rectangles,
-        displayScaleFactor,
-        currentAbsolutePoint,
-        currentScreenBounce,
-        currentScreenSize,
-        screenshotFileName,
-        outputFileName,
-        boundRatio: config.boundRatio,
-        config,
-    });
-    const outputImageBase64 = await outputImage.getBase64Async("image/png");
-    previewBrowser.updateImage(outputImageBase64);
-    const input = await race(previewBrowser.onClose(30 * 1000));
-    const inputContent: OutputContentTemplateArgs["inputContent"] = {
-        raw: input,
-        value: markdownEscaper.escape(input),
-    };
-    const selectedContent: OutputContentTemplateArgs["selectedContent"] = {
-        raw: input.trim(),
-        value: markdownEscaper.escape(input.trim()),
-    };
-    fs.appendFileSync(
-        path.join(config.outputDir, "README.md"),
-        config.outputContentTemplate({
-            imgPath: outputImageFileName,
-            inputContent,
-            selectedContent,
-        }),
-        "utf-8"
-    );
 };

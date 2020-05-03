@@ -5,6 +5,8 @@ import minimist from "minimist";
 import { Deferred } from "./Deferred";
 import { timeout } from "./timeout";
 
+const log = require("electron-log");
+Object.assign(console, log.functions);
 // mumemo://
 app.setAsDefaultProtocolClient("mumemo");
 
@@ -16,6 +18,11 @@ const urlToConfig = (urlString?: string): AppConfig => {
     return {
         DEBUG: query.DEBUG ? Boolean(query.DEBUG) : defaultAppConfig.DEBUG,
         debugOutputDir: query.debugOutputDir ? String(query.debugOutputDir) : defaultAppConfig.debugOutputDir,
+        autoFocus: query.autoFocus ? Boolean(query.autoFocus) : defaultAppConfig.autoFocus,
+        autoSave: query.autoSave ? Boolean(query.autoSave) : defaultAppConfig.autoSave,
+        autoSaveTimeoutMs: query.autoSaveTimeoutMs
+            ? Number(query.autoSaveTimeoutMs)
+            : defaultAppConfig.autoSaveTimeoutMs,
         boundRatio: query.boundRatio ? Number(query.boundRatio) : defaultAppConfig.boundRatio,
         outputDir: query.outputDir ? String(query.outputDir) : defaultAppConfig.outputDir,
         outputContentTemplate: defaultAppConfig.outputContentTemplate,
@@ -30,19 +37,19 @@ const cliToConfig = (): AppConfig => {
     };
 };
 
-// singletone
+// singleton
 const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+    app.quit();
+} else {
+    app.on("second-instance", (event, commandLine, workingDirectory) => {
+        appProcess.main(cliToConfig());
+    });
+}
 const appProcess = {
     isProcessing: false,
     abortDeferred: new Deferred(),
     run(config: AppConfig) {
-        if (!gotTheLock) {
-            return app.quit();
-        } else {
-            app.on("second-instance", (event, commandLine, workingDirectory) => {
-                appProcess.main(cliToConfig());
-            });
-        }
         appProcess.main(config);
     },
     finish() {
@@ -51,7 +58,6 @@ const appProcess = {
         appProcess.isProcessing = false;
     },
     async cancel() {
-        console.log("+S?SS+SPxcancenl");
         appProcess.abortDeferred.reject(new Error("Cancel"));
         appProcess.abortDeferred = new Deferred<any>();
         appProcess.isProcessing = false;
