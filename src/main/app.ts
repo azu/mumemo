@@ -341,11 +341,31 @@ const createFocusImage = async ({
 };
 
 export const run = async (config: AppConfig, abortablePromise: Promise<void>) => {
+    const processingState = {
+        needCleanUpFiles: [] as string[],
+        clean() {
+            processingState.needCleanUpFiles.forEach((fileName) => {
+                try {
+                    fs.unlinkSync(fileName);
+                } catch (error) {
+                    if (config.DEBUG) {
+                        console.error(error);
+                    }
+                }
+            });
+        },
+        use<T extends string>(fileName: T): T {
+            processingState.needCleanUpFiles.push(fileName);
+            return fileName;
+        },
+    };
     const race = <T extends any>(promise: Promise<T>): Promise<T> => {
         // on cancel
         abortablePromise.catch(async () => {
             const previewBrowser = await PreviewBrowser.instance();
             previewBrowser.cancel();
+            // clean non-saved files
+            processingState.clean();
         });
         return Promise.race([promise, abortablePromise]) as Promise<T>;
     };
@@ -401,7 +421,7 @@ export const run = async (config: AppConfig, abortablePromise: Promise<void>) =>
             title: activeInfo?.title ?? "unknown",
         })
     );
-    const outputFileName = path.join(config.outputDir, outputImageFileName);
+    const outputFileName = processingState.use(path.join(config.outputDir, outputImageFileName));
     const { outputImage } = await createFocusImage({
         DEBUG,
         rectangles,
