@@ -2,7 +2,7 @@ import { BrowserWindow, ipcMain } from "electron";
 import windowStateKeeper from "electron-window-state";
 import path from "path";
 import { format as formatUrl } from "url";
-import { timeout } from "./timeout";
+import { Deferred } from "./Deferred";
 
 const Positioner = require("electron-positioner");
 
@@ -10,32 +10,13 @@ const isDevelopment = process.env.NODE_ENV !== "production";
 
 let _PreviewBrowser: PreviewBrowser | null = null;
 
-class Deferred<T extends any> {
-    promise: Promise<T>;
-    private _resolve!: (value?: T) => void;
-    private _reject!: (reason?: Error) => void;
-
-    constructor() {
-        this.promise = new Promise((resolve, reject) => {
-            this._resolve = resolve;
-            this._reject = reject;
-        });
-    }
-
-    resolve(value?: any) {
-        this._resolve(value);
-    }
-
-    reject(reason?: Error) {
-        this._reject(reason);
-    }
-}
-
 export class PreviewBrowser {
     private mainWindow: Electron.BrowserWindow | null;
     private inputValue: string;
     private closedDeferred: Deferred<void>;
     private forcusAtOnce: boolean;
+    private canceled: boolean;
+    private timeoutId: NodeJS.Timeout | null;
 
     get isDeactived() {
         return this.mainWindow === null;
@@ -43,7 +24,7 @@ export class PreviewBrowser {
 
     static async instance(): Promise<PreviewBrowser> {
         if (_PreviewBrowser) {
-            return _PreviewBrowser.reset();
+            return _PreviewBrowser;
         }
         const instance = new PreviewBrowser();
         return new Promise((resolve) => {
@@ -59,6 +40,8 @@ export class PreviewBrowser {
         this.inputValue = "";
         this.closedDeferred = new Deferred<void>();
         this.forcusAtOnce = false;
+        this.canceled = false;
+        this.timeoutId = null;
     }
 
     reset() {
@@ -66,6 +49,10 @@ export class PreviewBrowser {
         this.closedDeferred.resolve();
         this.closedDeferred = new Deferred<void>();
         this.forcusAtOnce = false;
+        this.canceled = false;
+        if (this.timeoutId) {
+            clearTimeout(this.timeoutId);
+        }
         return this;
     }
 
@@ -80,7 +67,7 @@ export class PreviewBrowser {
             y: mainWindowState.y,
             width: mainWindowState.width,
             height: mainWindowState.height,
-            webPreferences: { nodeIntegration: true, webSecurity: false },
+            webPreferences: { nodeIntegration: true, webSecurity: true },
         });
         if (isDevelopment) {
             browserWindow.loadURL(`http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}`);
@@ -126,17 +113,24 @@ export class PreviewBrowser {
         this.mainWindow?.webContents.send("update:image", imgSrc);
     }
 
+    cancel() {
+        this.canceled = true;
+        if (this.timeoutId) {
+            clearTimeout(this.timeoutId);
+        }
+    }
+
     // resolve this promise then save text
     async onClose() {
         return new Promise((resolve) => {
             // focus at once, not timeout
             // timeout -> hide and save -> reset
-            timeout(5000).then(() => {
-                if (!this.forcusAtOnce) {
+            this.timeoutId = setTimeout(() => {
+                if (!this.forcusAtOnce && !this.canceled) {
                     this.hide();
                     resolve();
                 }
-            });
+            }, 5000);
             // save -> save
             this.closedDeferred.promise.then(() => {
                 resolve(this.inputValue);

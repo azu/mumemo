@@ -3,6 +3,7 @@
   "name": "mumemo",
   "version": "1.0.0",
   "license": "MIT",
+  "main": "./dist/main/main.js",
   "scripts": {
     "dev": "electron-webpack dev",
     "compile": "electron-webpack",
@@ -24,6 +25,7 @@
     "flatbush": "^3.3.0",
     "hypermd": "^0.3.11",
     "jimp": "^0.10.3",
+    "minimist": "^1.2.5",
     "opencv-wasm": "^4.3.0-0.3.0",
     "pureimage": "^0.2.1",
     "source-map-support": "^0.5.16",
@@ -32,6 +34,7 @@
   "devDependencies": {
     "@types/flatbush": "^3.1.0",
     "@types/jimp": "^0.2.28",
+    "@types/minimist": "^1.2.0",
     "@types/node": "12",
     "@types/tmp": "^0.1.0",
     "electron": "8.2.0",

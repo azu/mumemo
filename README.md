@@ -1,5 +1,14 @@
-# 
+# mumemo
 
 ## Installation
 
-- [ ] Require 
+    yarn install
+    yarn dist
+
+## Usage
+
+### Shortcut
+
+### URL scheme
+
+### Command Line 
