@@ -9,9 +9,9 @@ if (!app) {
 const textarea = document.createElement("textarea");
 app.appendChild(textarea);
 const imgDiv = document.createElement("div");
+imgDiv.className = "img";
 // img
 const img = document.createElement("img");
-imgDiv.className = "img";
 imgDiv.appendChild(img);
 app.appendChild(imgDiv);
 // save button
@@ -35,14 +35,22 @@ const editor = HyperMD.fromTextArea(textarea, {
     },
 });
 
+ipcRenderer.on("reset", () => {
+    editor.setValue("");
+    imgDiv.removeAttribute("style");
+    imgDiv.classList.remove("placeholder");
+});
 ipcRenderer.on("update", (event, value: string, imageSrc: string) => {
     editor.setValue(value);
     requestAnimationFrame(() => {
         editor.focus();
         editor.setCursor(editor.lineCount(), 0);
     });
+    imgDiv.classList.add("placeholder");
     imgDiv.style.backgroundImage = `url(${imageSrc})`;
 });
+
 ipcRenderer.on("update:image", (event, imageSrc: string) => {
+    imgDiv.classList.remove("placeholder");
     imgDiv.style.backgroundImage = `url(${imageSrc})`;
 });

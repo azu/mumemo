@@ -1,3 +1,4 @@
+import * as Electron from "electron";
 import { app, screen } from "electron";
 import execa from "execa";
 import { getReactFromImage, getReactFromImageResult, getReactFromImageResults } from "./detect";
@@ -8,7 +9,14 @@ import Jimp from "jimp";
 import * as path from "path";
 import tmp from "tmp";
 import { PreviewBrowser } from "./PreviewBrowser";
+import dayjs from "dayjs";
+import shortid from "shortid";
+import sanitize from "sanitize-filename";
+import * as os from "os";
 
+const markdownEscapedCharaters = require("markdown-escapes");
+const GfmEscape = require("gfm-escape");
+const markdownEscaper = new GfmEscape();
 const PImage = require("pureimage");
 // const fnt = PImage.registerFont("~/Library/Fonts/Ricty-Bold.ttf", "Source Sans Pro");
 // fnt.load(() => {});
@@ -20,6 +28,7 @@ async function calculateWrapperRect({
     debugImage,
     debugContext,
     DEBUG,
+    config,
 }: {
     rects: getReactFromImageResult[];
     relativePoint: { x: number; y: number };
@@ -27,6 +36,7 @@ async function calculateWrapperRect({
     debugContext: any;
     DEBUG: boolean;
     boundRatio: number;
+    config: AppConfig;
 }) {
     const flatbush = new Flatbush(rects.length);
     const boundRects = rects.map((result) => {
@@ -55,7 +65,7 @@ async function calculateWrapperRect({
     }
     if (DEBUG) {
         try {
-            await writePureImage(debugImage, path.join(defaultAppConfig.debugOutputDir, "step3.png"));
+            await writePureImage(debugImage, path.join(config.debugOutputDir, "step3.png"));
         } catch {}
     }
     flatbush.finish();
@@ -142,15 +152,40 @@ async function calculateWrapperRect({
 export type AppConfig = {
     DEBUG: boolean;
     outputDir: string;
+    outputContentTemplate: (args: OutputContentTemplateArgs) => string;
     debugOutputDir: string;
     boundRatio: number;
 };
-export const defaultAppConfig: AppConfig = {
-    DEBUG: false,
-    outputDir: app.getPath("downloads"),
-    debugOutputDir: app.getPath("downloads"),
-    boundRatio: 0.2,
+export type AppConfigCreatorArgs = { app: Electron.App; path: typeof path };
+export type OutputContentTemplateArgs = {
+    imgPath: string;
+    selectedContent: {
+        raw: string;
+        value: string;
+    };
+    inputContent: {
+        raw: string;
+        value: string;
+    };
 };
+const createConfig = ({ app, path }: AppConfigCreatorArgs): AppConfig => {
+    return {
+        boundRatio: 0.2,
+        // ~/Documents/mumemo
+        outputDir: path.join(app.getPath("documents"), "mumemo"),
+        // Output Template Function
+        outputContentTemplate: ({ imgPath, selectedContent, inputContent }: OutputContentTemplateArgs) => {
+            return `![](${imgPath})
+${selectedContent ? `>  ${selectedContent.value.split("\n").join("\n> ")}\n` : ""}
+${inputContent.raw}
+`;
+        },
+        // DEBUG,
+        DEBUG: false,
+        debugOutputDir: path.join(app.getPath("documents"), "mumemo"),
+    };
+};
+export const defaultAppConfig: AppConfig = createConfig({ app, path });
 
 function writePureImage<T extends any>(debugImage: T, fileName: string) {
     return new Promise((resolve, reject) => {
@@ -203,15 +238,19 @@ const createFocusImage = async ({
     currentAbsolutePoint,
     displayScaleFactor,
     boundRatio,
+    outputFileName,
+    config,
 }: {
     DEBUG: boolean;
     screenshotFileName: string;
+    outputFileName: string;
     rectangles: getReactFromImageResults;
     currentScreenBounce: { x: number; y: number };
     currentScreenSize: { width: number; height: number };
     currentAbsolutePoint: { x: number; y: number };
     displayScaleFactor: number;
     boundRatio: number;
+    config: AppConfig;
 }) => {
     const img = await readPureImage(screenshotFileName);
     const debugImage = DEBUG ? PImage.make(img.width, img.height) : ({} as any);
@@ -268,6 +307,7 @@ const createFocusImage = async ({
         debugContext: context,
         debugImage,
         DEBUG: DEBUG,
+        config,
     });
     if (DEBUG) {
         context.fillStyle = "rgba(0,255,255,0.5)";
@@ -293,10 +333,9 @@ const createFocusImage = async ({
         Math.min(imageWidth - wrapperRect.minX, wrapperRect.maxX - wrapperRect.minX),
         Math.min(imageHeight - wrapperRect.minY, wrapperRect.maxY - wrapperRect.minY)
     );
-    const outputFilePath = path.join(defaultAppConfig.outputDir, "output.png");
-    image.write(outputFilePath);
+    image.write(outputFileName);
     return {
-        outputFilePath,
+        outputFilePath: outputFileName,
         outputImage: image,
     };
 };
@@ -345,6 +384,24 @@ export const run = async (config: AppConfig, abortablePromise: Promise<void>) =>
     const firstImageBase64 = await firstImage.getBase64Async("image/png");
     previewBrowser.edit(``, firstImageBase64);
     // Update with Focus Image
+    const sanitizeFileName = (name: string): string => {
+        const homedir = os.homedir();
+        const stripedNamed: string = [homedir, markdownEscapedCharaters].reduce((result, escapeCharacter) => {
+            return result.split(escapeCharacter).join("");
+        }, name);
+        const spaceToUnderBar = stripedNamed.replace(/\s/g, "_");
+        return sanitize(spaceToUnderBar);
+    };
+    const createOutputImageFileName = ({ owner, title }: { owner: string; title: string }) => {
+        return `${owner}-${title}-${dayjs().format("YYYY-MM-DD")}-${shortid()}.png`;
+    };
+    const outputImageFileName = sanitizeFileName(
+        createOutputImageFileName({
+            owner: activeInfo?.owner.name ?? "unknown",
+            title: activeInfo?.title ?? "unknown",
+        })
+    );
+    const outputFileName = path.join(config.outputDir, outputImageFileName);
     const { outputImage } = await createFocusImage({
         DEBUG,
         rectangles,
@@ -353,16 +410,28 @@ export const run = async (config: AppConfig, abortablePromise: Promise<void>) =>
         currentScreenBounce,
         currentScreenSize,
         screenshotFileName,
+        outputFileName,
         boundRatio: config.boundRatio,
+        config,
     });
     const outputImageBase64 = await outputImage.getBase64Async("image/png");
     previewBrowser.updateImage(outputImageBase64);
-    const input = await race(previewBrowser.onClose());
-    fs.writeFileSync(
+    const input = await race(previewBrowser.onClose(30 * 1000));
+    const inputContent: OutputContentTemplateArgs["inputContent"] = {
+        raw: input,
+        value: markdownEscaper.escape(input),
+    };
+    const selectedContent: OutputContentTemplateArgs["selectedContent"] = {
+        raw: input.trim(),
+        value: markdownEscaper.escape(input.trim()),
+    };
+    fs.appendFileSync(
         path.join(config.outputDir, "README.md"),
-        `![](./output.png)
-
-${input}`,
+        config.outputContentTemplate({
+            imgPath: outputImageFileName,
+            inputContent,
+            selectedContent,
+        }),
         "utf-8"
     );
 };

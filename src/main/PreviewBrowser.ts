@@ -45,6 +45,7 @@ export class PreviewBrowser {
     }
 
     reset() {
+        this.mainWindow?.webContents.send("reset");
         this.inputValue = "";
         this.closedDeferred.resolve();
         this.closedDeferred = new Deferred<void>();
@@ -121,7 +122,7 @@ export class PreviewBrowser {
     }
 
     // resolve this promise then save text
-    async onClose() {
+    async onClose(timeoutMs: number): Promise<string> {
         return new Promise((resolve) => {
             // focus at once, not timeout
             // timeout -> hide and save -> reset
@@ -130,7 +131,7 @@ export class PreviewBrowser {
                     this.hide();
                     resolve();
                 }
-            }, 5000);
+            }, timeoutMs);
             // save -> save
             this.closedDeferred.promise.then(() => {
                 resolve(this.inputValue);

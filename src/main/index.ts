@@ -18,6 +18,7 @@ const urlToConfig = (urlString?: string): AppConfig => {
         debugOutputDir: query.debugOutputDir ? String(query.debugOutputDir) : defaultAppConfig.debugOutputDir,
         boundRatio: query.boundRatio ? Number(query.boundRatio) : defaultAppConfig.boundRatio,
         outputDir: query.outputDir ? String(query.outputDir) : defaultAppConfig.outputDir,
+        outputContentTemplate: defaultAppConfig.outputContentTemplate,
     };
 };
 
