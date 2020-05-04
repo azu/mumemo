@@ -1,10 +1,8 @@
-import * as Electron from "electron";
-import { app, screen } from "electron";
+import { screen } from "electron";
 import execa from "execa";
 import { getReactFromImage, getReactFromImageResult, getReactFromImageResults } from "./detect";
 import fs from "fs";
 import Flatbush from "flatbush";
-import activeWin from "active-win";
 import Jimp from "jimp";
 import * as path from "path";
 import tmp from "tmp";
@@ -13,7 +11,9 @@ import dayjs from "dayjs";
 import shortid from "shortid";
 import sanitize from "sanitize-filename";
 import * as os from "os";
-import { copySelectedText } from "./macos/Keyboard";
+import { copySelectedText } from "./macos/Clipboard";
+import { OutputContentTemplateArgs, UserConfig } from "./Config";
+import activeWin from "active-win";
 
 const markdownEscapedCharaters = require("markdown-escapes");
 const GfmEscape = require("gfm-escape");
@@ -39,15 +39,21 @@ async function calculateWrapperRect({
     boundRatio: number;
     config: AppConfig;
 }) {
+    if (config.DEBUG) {
+        if (boundRatio < 0) {
+            console.warn("boundRatio should be >= 0");
+        }
+    }
     const flatbush = new Flatbush(rects.length);
     const boundRects = rects.map((result) => {
-        const ratio = boundRatio;
         const rect = result.rect;
+        const paddingX = rect.x * Math.round(boundRatio - 1);
+        const paddingY = rect.y * Math.round(boundRatio - 1);
         return {
-            x: rect.x - rect.x * ratio,
-            y: rect.y - rect.y * ratio,
-            width: rect.width + rect.x * ratio * 2,
-            height: rect.height + rect.y * ratio * 2,
+            x: rect.x - paddingX,
+            y: rect.y - paddingY,
+            width: rect.width + paddingX * 2,
+            height: rect.height + paddingY * 2,
         };
     });
     for (const boundRect of boundRects) {
@@ -66,7 +72,7 @@ async function calculateWrapperRect({
     }
     if (DEBUG) {
         try {
-            await writePureImage(debugImage, path.join(config.debugOutputDir, "step3.png"));
+            await writePureImage(debugImage, path.join(config.outputDir, "_debug-step3.png"));
         } catch {}
     }
     flatbush.finish();
@@ -149,49 +155,6 @@ async function calculateWrapperRect({
         wrapperRect: resultBox,
     };
 }
-
-export type AppConfig = {
-    DEBUG: boolean;
-    outputDir: string;
-    outputContentTemplate: (args: OutputContentTemplateArgs) => string;
-    autoFocus: boolean;
-    autoSave: boolean;
-    autoSaveTimeoutMs: number;
-    debugOutputDir: string;
-    boundRatio: number;
-};
-export type AppConfigCreatorArgs = { app: Electron.App; path: typeof path };
-export type OutputContentTemplateArgs = {
-    imgPath: string;
-    selectedContent: {
-        raw: string;
-        value: string;
-    };
-    inputContent: {
-        raw: string;
-        value: string;
-    };
-};
-const createConfig = ({ app, path }: AppConfigCreatorArgs): AppConfig => {
-    return {
-        boundRatio: 0.2,
-        // ~/Documents/mumemo
-        outputDir: path.join(app.getPath("documents"), "mumemo"),
-        // Output Template Function
-        outputContentTemplate: ({ imgPath, selectedContent, inputContent }: OutputContentTemplateArgs) => {
-            return `![](${imgPath})
-${selectedContent.value ? `>  ${selectedContent.value.split("\n").join("\n> ")}\n` : ""}
-${inputContent.raw ? inputContent.raw.trimRight() + "\n\n" : ""}`;
-        },
-        autoFocus: true,
-        autoSave: true,
-        autoSaveTimeoutMs: 5 * 1000,
-        // DEBUG,
-        DEBUG: false,
-        debugOutputDir: path.join(app.getPath("documents"), "mumemo"),
-    };
-};
-export const defaultAppConfig: AppConfig = createConfig({ app, path });
 
 function writePureImage<T extends any>(debugImage: T, fileName: string) {
     return new Promise((resolve, reject) => {
@@ -326,7 +289,7 @@ const createFocusImage = async ({
     }
     // debug
     if (DEBUG) {
-        await writePureImage(debugImage, path.join(defaultAppConfig.debugOutputDir, "step4.png"));
+        await writePureImage(debugImage, path.join(config.outputDir, "_debug-step4.png"));
     }
     // result
     const image = await Jimp.read(screenshotFileName);
@@ -346,7 +309,18 @@ const createFocusImage = async ({
     };
 };
 
-export const run = async (config: AppConfig, abortablePromise: Promise<void>) => {
+export type AppConfig = UserConfig & {
+    outputDir: string;
+};
+export const run = async ({
+    config,
+    activeWindow,
+    abortablePromise,
+}: {
+    config: AppConfig;
+    activeWindow: activeWin.Result;
+    abortablePromise: Promise<void>;
+}) => {
     const processingState = {
         needCleanUpFiles: [] as string[],
         clean() {
@@ -389,18 +363,20 @@ export const run = async (config: AppConfig, abortablePromise: Promise<void>) =>
         const currentScreenSize = currentScreen.size;
         const currentScreenBounce = currentScreen.bounds;
         const displayScaleFactor = currentScreen.scaleFactor;
-        const activeInfo = activeWin.sync();
         const temporaryScreenShot = tmp.fileSync({
             prefix: "mumemo",
             postfix: ".png",
         });
-        const windowId = String(activeInfo?.id);
-        console.log("active info", activeInfo);
-        const screenshotFileName = DEBUG ? path.join(config.debugOutputDir, "step1.png") : temporaryScreenShot.name;
+        const windowId = activeWindow.id;
+        if (!windowId) {
+            console.error("Not found active window id");
+            return cancelTask();
+        }
+        const screenshotFileName = DEBUG ? path.join(config.outputDir, "_debug-step1.png") : temporaryScreenShot.name;
         const screenshotSuccess = await race(
             screenshot({
                 screenshotFileName,
-                windowId: windowId,
+                windowId: String(windowId),
             })
         );
         if (!screenshotSuccess) {
@@ -409,7 +385,7 @@ export const run = async (config: AppConfig, abortablePromise: Promise<void>) =>
         const clipboardTextPromise = copySelectedText();
         const rectangles = await race(
             getReactFromImage(screenshotFileName, {
-                debugOutputPath: DEBUG ? path.join(config.debugOutputDir, "step2.png") : undefined,
+                debugOutputPath: DEBUG ? path.join(config.outputDir, "_debug-step2.png") : undefined,
             })
         );
         // Fast Preview
@@ -437,12 +413,13 @@ export const run = async (config: AppConfig, abortablePromise: Promise<void>) =>
             return sanitize(spaceToUnderBar);
         };
         const createOutputImageFileName = ({ owner, title }: { owner: string; title: string }) => {
+            // TODO: img-prefix?
             return `${owner}-${title}-${dayjs().format("YYYY-MM-DD")}-${shortid()}.png`;
         };
         const outputImageFileName = sanitizeFileName(
             createOutputImageFileName({
-                owner: activeInfo?.owner.name ?? "unknown",
-                title: activeInfo?.title ?? "unknown",
+                owner: activeWindow?.owner.name ?? "unknown",
+                title: activeWindow?.title ?? "unknown",
             })
         );
         const outputFileName = processingState.use(path.join(config.outputDir, outputImageFileName));
@@ -455,12 +432,12 @@ export const run = async (config: AppConfig, abortablePromise: Promise<void>) =>
             currentScreenSize,
             screenshotFileName,
             outputFileName,
-            boundRatio: config.boundRatio,
+            boundRatio: config.screenshotBoundRatio,
             config,
         });
         const outputImageBase64 = await outputImage.getBase64Async("image/png");
         previewBrowser.updateImage(outputImageBase64);
-        const input = await previewBrowser.onClose({
+        const input = await previewBrowser.waitForInput({
             autoSave: config.autoSave,
             timeoutMs: config.autoSaveTimeoutMs,
         });
@@ -473,7 +450,7 @@ export const run = async (config: AppConfig, abortablePromise: Promise<void>) =>
             value: markdownEscaper.escape(clipboardText.trim()),
         };
         fs.appendFileSync(
-            path.join(config.outputDir, "README.md"),
+            path.join(config.outputDir, config.outputFileName),
             config.outputContentTemplate({
                 imgPath: outputImageFileName,
                 inputContent,

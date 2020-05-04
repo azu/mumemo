@@ -113,7 +113,7 @@ export class PreviewBrowser {
     }
 
     // resolve this promise then save text
-    async onClose({ timeoutMs, autoSave }: { timeoutMs: number; autoSave: boolean }): Promise<string> {
+    async waitForInput({ timeoutMs, autoSave }: { timeoutMs: number; autoSave: boolean }): Promise<string> {
         const onCancel = () => {
             this.closedDeferred.reject(new Error("Cancel by user"));
             this.mainWindow?.close();
@@ -143,7 +143,6 @@ export class PreviewBrowser {
                     resolve(value);
                 })
                 .catch((error) => {
-                    console.log("errorerrorerrorerror", error);
                     reject(error);
                 })
                 .finally(() => {

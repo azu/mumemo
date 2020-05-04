@@ -47,7 +47,6 @@ export function copySelectedText(): Promise<string | undefined> {
         })
         .then(() => {
             const newText = clipboard.readText();
-            console.log("newText", newText);
             return oldText !== newText ? newText : undefined;
         })
         .catch(() => {
