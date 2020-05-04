@@ -58,7 +58,7 @@ Flatbush.prototype.overlap = function (this: Flatbush, minX: number, minY: numbe
             // @ts-ignore
             const nodeMaxY = this._boxes[pos + 3];
             // Overlap algorithm
-            // https://www.geeksforgeeks.org/find-two-rectangles-overlap/
+            // https://developer.mozilla.org/en-US/docs/Games/Techniques/2D_collision_detection
             // check if node bbox intersects with query bbox
             if (minX < nodeMaxX && maxX > nodeMinX && minY < nodeMaxY && maxY > nodeMinY) {
                 if (nodeIndex < this.numItems * 4) {
