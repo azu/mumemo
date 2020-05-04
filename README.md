@@ -49,7 +49,7 @@ This app writes Markdown note(`README.md`) and screenshots into the output direc
 :memo: You need to allow mumemo.app to access "Accessibility" and "Screen recording" on macOS's Privacy options
 This permission is needed to get active window information.
 
-1. Press <kdb>CommandOrControl+Shift+X</kdb> (It can be customized by `mumemo.config.js`)
+1. Press <kbd>CommandOrControl+Shift+X</kbd> (It can be customized by `mumemo.config.js`)
 2. Capture **focus area** and show note window​
 
 3. Note your memo into the window
