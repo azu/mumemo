@@ -8,6 +8,12 @@ Mumemo is also No-UI(User Interaction) note application.
 - Screenshot **focus area** automatically and add note about it
 - Support No-UI(User Interaction) mode
 
+mumemo decide **focus area** according to followings:
+
+- Cursor point
+- Highlight ares like sections in the screenshot
+    - mumemo use [OpenCV.js](https://docs.opencv.org/3.4/d5/d10/tutorial_js_root.html) 
+
 ## Motivation
 
 I've liked to write note and capture the screenshot during reading a book.
