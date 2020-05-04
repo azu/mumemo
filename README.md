@@ -31,6 +31,11 @@ Example of **focus area** workflow(`DEBUG:true`):
 
 :warning: This app is not signed. So, OS show warning about it.
 
+Installation steps on macOS
+
+1. Select `mumemo.app`
+2. Open context menu and Click "Open"
+
 ## Usage
 
 ### 1. Setup 
@@ -165,6 +170,21 @@ This behavior take two steps.
 
 1. Press key -> Capture the screenshot and save it 
 2. [Options] Add a note if I want
+
+
+## Debug
+
+mumemo output debug log using [electron-log](https://www.npmjs.com/package/electron-log)
+
+    on Linux: ~/.config/{app name}/logs/{process type}.log
+    on macOS: ~/Library/Logs/{app name}/{process type}.log
+    on Windows: %USERPROFILE%\AppData\Roaming\{app name}\logs\{process type}.log
+
+Tail logging
+
+````
+$ tail -F ~/Library/Logs/mumemo/main.log
+```
 
 ## Contributing
 
