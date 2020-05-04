@@ -18,7 +18,7 @@ Example of **focus area** workflow(`DEBUG:true`):
 
 | Step 1  |  Step 2    |  Step 3  |  Step 4    |
 | ---- | ---- | ---- | ---- |
-|      |      |      |      |
+| ![step1](docs/resources/_debug-step1.png) | ![step2](docs/resources/_debug-step2.png)     | ![step3](docs/resources/_debug-step3.png)     | ![step4](docs/resources/_debug-step4.png)     |
 
 > Quote from <https://git-scm.com/book/ja/v2>
 
