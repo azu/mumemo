@@ -27,7 +27,7 @@ Example of **focus area** workflow(`DEBUG:true`):
 > https://github.com/azu/mumemo/releases/latest
 
 1. Download a binary from [the latest releases](https://github.com/azu/mumemo/releases/latest)
-2. Install
+2. Install app
 
 :warning: This app is not signed. So, OS show warning about it.
 
