@@ -11,6 +11,12 @@
     "dist:dir": "yarn dist --dir -c.compression=store -c.mac.identity=null",
     "prettier": "prettier --write \"**/*.{js,jsx,ts,tsx,css}\""
   },
+  "build": {
+    "productName": "mumemo",
+    "appId": "info.efcl.mumemo",
+    "asar": true,
+    "npmRebuild": false
+  },
   "electronWebpack": {
     "whiteListedModules": [
       "codemirror",
