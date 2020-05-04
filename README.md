@@ -1,6 +1,6 @@
 # mumemo
 
-Mumemo is Screenshot-behavior note application.
+Mumemo is screenshot-driven note application.
 Mumemo is also No-UI(User Interaction) note application.
 
 ## Features
@@ -154,7 +154,7 @@ module.exports.create = ({ app, path }) => {
 
 I've liked to write note and capture the screenshot during reading a book.
 
-This behavior.take two steps.
+This behavior take two steps.
 
 1. Capture the screenshot
 2. Go to another note application like [OneNote](https://www.onenote.com/) and paste it
@@ -165,3 +165,15 @@ This behavior.take two steps.
 
 1. Press key -> Capture the screenshot and save it 
 2. [Options] Add a note if I want
+
+## Contributing
+
+1. Fork it!
+2. Create your feature branch: `git checkout -b my-new-feature`
+3. Commit your changes: `git commit -am 'Add some feature'`
+4. Push to the branch: `git push origin my-new-feature`
+5. Submit a pull request :D
+
+## License
+
+MIT
