@@ -186,7 +186,7 @@ mumemo output debug log using [electron-log](https://www.npmjs.com/package/elect
 
 Tail logging
 
-````
+```
 $ tail -F ~/Library/Logs/mumemo/main.log
 ```
 
