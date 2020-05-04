@@ -14,38 +14,34 @@ mumemo decide **focus area** according to followings:
 - Highlight ares like sections in the screenshot
     - mumemo use [OpenCV.js](https://docs.opencv.org/3.4/d5/d10/tutorial_js_root.html) 
 
-## Motivation
+Example of **focus area** workflow(`DEBUG:true`):
 
-I've liked to write note and capture the screenshot during reading a book.
+| Step 1  |  Step 2    |  Step 3  |  Step 4    |
+| ---- | ---- | ---- | ---- |
+|      |      |      |      |
 
-This behavior.take two steps.
-
-1. Capture the screenshot
-2. Go to another note application like [OneNote](https://www.onenote.com/) and paste it
-3. Add a note about the screenshot(page)
-4. Back to viewer application
-
-`mumemo` reduce the steps.
-
-1. Press key -> Capture the screenshot and save it 
-2. [Options] Add a note if I want
+> Quote from <https://git-scm.com/book/ja/v2>
 
 ## Installation
 
-    yarn install
-    yarn dist
+> https://github.com/azu/mumemo/releases/latest
+
+1. Download a binary from [the latest releases](https://github.com/azu/mumemo/releases/latest)
+2. Install
+
+:warning: This app is not signed. So, OS show warning about it.
 
 ## Usage
 
-### First Time setup
+### 1. Setup 
 
 1. Setup **output directory**
 
 This app writes Markdown note(`README.md`) and screenshots into the output directory.
 
-### Start to note via Global Shortcut
+### 2. Start to note via Global Shortcut
 
-1. Press <kdd>CommandOrControl+Shift+X</kdd> (It can be customized by `mumemo.config.js`)
+1. Press <kdb>CommandOrControl+Shift+X</kdb> (It can be customized by `mumemo.config.js`)
 2. Capture **focus area** and show note window
 3. Note your memo into the window
 4. Save it
@@ -119,12 +115,18 @@ export type UserConfig = {
      * Default: 1.2
      */
     screenshotBoundRatio: number;
+    /**
+     * Search count for related content that is included into screenshot result
+     * The higher the number, screenshot size is large.
+     * Default: 5
+     */
+    screenshotSearchRectangleMaxCount: number
 };
 ```
 
 For more details, see [src/main/Config.ts](src/main/Config.ts)
 
-## Receipts
+## Recipes
 
 ### No-UI notes
 
@@ -147,3 +149,19 @@ module.exports.create = ({ app, path }) => {
     };
 }
 ```
+
+## Motivation
+
+I've liked to write note and capture the screenshot during reading a book.
+
+This behavior.take two steps.
+
+1. Capture the screenshot
+2. Go to another note application like [OneNote](https://www.onenote.com/) and paste it
+3. Add a note about the screenshot(page)
+4. Back to viewer application
+
+`mumemo` reduce the steps.
+
+1. Press key -> Capture the screenshot and save it 
+2. [Options] Add a note if I want

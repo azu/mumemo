@@ -39,6 +39,12 @@ export type UserConfig = {
      * Default: 1.2
      */
     screenshotBoundRatio: number;
+    /**
+     * Max search count for related content that is included into screenshot result
+     * The higher the number, screenshot size is large.
+     * Default: 5
+     */
+    screenshotSearchRectangleMaxCount: number;
 };
 export type UserConfigCreatorArgs = { app: Electron.App; path: typeof path; activeWindow: activeWin.Result };
 export type OutputContentTemplateArgs = {
@@ -55,7 +61,6 @@ export type OutputContentTemplateArgs = {
 export const defaultShortcutKey = "CommandOrControl+Shift+X";
 export const createUserConfig = ({ app, path, activeWindow }: UserConfigCreatorArgs): UserConfig => {
     return {
-        screenshotBoundRatio: 1.2,
         outputFileName: "README.md",
         // Output Template Function
         outputContentTemplate: ({ imgPath, selectedContent, inputContent }: OutputContentTemplateArgs) => {
@@ -69,6 +74,8 @@ export const createUserConfig = ({ app, path, activeWindow }: UserConfigCreatorA
         autoFocus: true,
         autoSave: true,
         autoSaveTimeoutMs: 30 * 1000,
+        screenshotBoundRatio: 1.2,
+        screenshotSearchRectangleMaxCount: 5,
         DEBUG: false,
     };
 };

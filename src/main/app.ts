@@ -15,6 +15,66 @@ import { copySelectedText } from "./macos/Clipboard";
 import { OutputContentTemplateArgs, UserConfig } from "./Config";
 import activeWin from "active-win";
 
+// add overlap
+declare type FlatbushAddtional = {
+    overlap(this: Flatbush, minX: number, minY: number, maxX: number, maxY: number): number[];
+};
+
+// binary search for the first value in the array bigger than the given
+function upperBound(value: any, arr: any) {
+    let i = 0;
+    let j = arr.length - 1;
+    while (i < j) {
+        const m = (i + j) >> 1;
+        if (arr[m] > value) {
+            j = m;
+        } else {
+            i = m + 1;
+        }
+    }
+    return arr[i];
+}
+
+// @ts-ignore
+Flatbush.prototype.overlap = function (this: Flatbush, minX: number, minY: number, maxX: number, maxY: number) {
+    // @ts-ignore
+    let nodeIndex = this._boxes.length - 4;
+    const queue: number[] = [];
+    const results: number[] = [];
+    while (nodeIndex !== undefined) {
+        // find the end index of the node
+        // @ts-ignore
+        const end = Math.min(nodeIndex + this.nodeSize * 4, upperBound(nodeIndex, this._levelBounds));
+        // search through child nodes
+        for (let pos = nodeIndex; pos < end; pos += 4) {
+            // @ts-ignore
+            const index = this._indices[pos >> 2] | 0;
+            // @ts-ignore
+            const nodeMinX = this._boxes[pos];
+            // @ts-ignore
+            const nodeMinY = this._boxes[pos + 1];
+            // @ts-ignore
+            const nodeMaxX = this._boxes[pos + 2];
+            // @ts-ignore
+            const nodeMaxY = this._boxes[pos + 3];
+            // Overlap algorithm
+            // https://www.geeksforgeeks.org/find-two-rectangles-overlap/
+            // check if node bbox intersects with query bbox
+            if (minX < nodeMaxX && maxX > nodeMinX && minY < nodeMaxY && maxY > nodeMinY) {
+                if (nodeIndex < this.numItems * 4) {
+                    results.push(index);
+                } else {
+                    queue.push(index); // node; add it to the search queue
+                }
+            }
+        }
+
+        // @ts-ignore
+        nodeIndex = queue.pop();
+    }
+
+    return results;
+};
 const markdownEscapedCharaters = require("markdown-escapes");
 const GfmEscape = require("gfm-escape");
 const markdownEscaper = new GfmEscape();
@@ -25,7 +85,7 @@ const PImage = require("pureimage");
 async function calculateWrapperRect({
     rects,
     relativePoint,
-    boundRatio,
+    screenshotBoundRatio,
     debugImage,
     debugContext,
     DEBUG,
@@ -36,19 +96,19 @@ async function calculateWrapperRect({
     debugImage: any;
     debugContext: any;
     DEBUG: boolean;
-    boundRatio: number;
+    screenshotBoundRatio: number;
     config: AppConfig;
 }) {
     if (config.DEBUG) {
-        if (boundRatio < 0) {
+        if (screenshotBoundRatio < 0) {
             console.warn("boundRatio should be >= 0");
         }
     }
-    const flatbush = new Flatbush(rects.length);
+    const flatbush = new Flatbush(rects.length) as Flatbush & FlatbushAddtional;
     const boundRects = rects.map((result) => {
         const rect = result.rect;
-        const paddingX = rect.x * Math.round(boundRatio - 1);
-        const paddingY = rect.y * Math.round(boundRatio - 1);
+        const paddingX = Math.round(rect.x * (screenshotBoundRatio - 1));
+        const paddingY = Math.round(rect.y * (screenshotBoundRatio - 1));
         return {
             x: rect.x - paddingX,
             y: rect.y - paddingY,
@@ -76,7 +136,9 @@ async function calculateWrapperRect({
         } catch {}
     }
     flatbush.finish();
-    const rectangleSearchLimit = Math.round(Math.min(Math.max(2, boundRects.length / 2), 5));
+    const rectangleSearchLimit = Math.round(
+        Math.min(Math.max(2, boundRects.length / 2), config.screenshotSearchRectangleMaxCount)
+    );
     if (DEBUG) {
         console.log("Rectangle count: ", boundRects.length);
         console.log("rectangleSearchLimit:", rectangleSearchLimit);
@@ -90,7 +152,6 @@ async function calculateWrapperRect({
     };
     const hitIdSet = new Set<number>();
     neighborIds.forEach((id) => {
-        hitIdSet.add(id);
         const reactFromImageResult = boundRects[id];
         {
             relatedBox.minX.add(reactFromImageResult.x);
@@ -113,7 +174,7 @@ async function calculateWrapperRect({
             }
             hitIdSet.add(id);
             const rectOfId = boundRects[id];
-            const ids = flatbush.search(
+            const ids = flatbush.overlap(
                 rectOfId.x,
                 rectOfId.y,
                 rectOfId.x + rectOfId.width,
@@ -206,7 +267,7 @@ const createFocusImage = async ({
     currentScreenSize,
     currentAbsolutePoint,
     displayScaleFactor,
-    boundRatio,
+    screenshotBoundRatio,
     outputFileName,
     config,
 }: {
@@ -218,7 +279,7 @@ const createFocusImage = async ({
     currentScreenSize: { width: number; height: number };
     currentAbsolutePoint: { x: number; y: number };
     displayScaleFactor: number;
-    boundRatio: number;
+    screenshotBoundRatio: number;
     config: AppConfig;
 }) => {
     const img = await readPureImage(screenshotFileName);
@@ -272,7 +333,7 @@ const createFocusImage = async ({
     const { wrapperRect } = await calculateWrapperRect({
         rects: filteredRects,
         relativePoint: relativePointCursorInScreen,
-        boundRatio: boundRatio,
+        screenshotBoundRatio: screenshotBoundRatio,
         debugContext: context,
         debugImage,
         DEBUG: DEBUG,
@@ -432,7 +493,7 @@ export const run = async ({
             currentScreenSize,
             screenshotFileName,
             outputFileName,
-            boundRatio: config.screenshotBoundRatio,
+            screenshotBoundRatio: config.screenshotBoundRatio,
             config,
         });
         const outputImageBase64 = await outputImage.getBase64Async("image/png");
@@ -459,6 +520,7 @@ export const run = async ({
             "utf-8"
         );
     } catch (error) {
+        console.error(error);
         // when occur error{timeout,cancel}, cleanup it and suppress error
         await cancelTask();
     }
