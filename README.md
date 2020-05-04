@@ -31,7 +31,7 @@ Example of **focus area** workflow(`DEBUG:true`):
 
 :warning: This app is not signed. So, OS show warning about it.
 
-Installation steps on macOS
+Additional installation steps on macOS:
 
 1. Select `mumemo.app`
 2. Open context menu and Click "Open"
@@ -47,7 +47,7 @@ This app writes Markdown note(`README.md`) and screenshots into the output direc
 ### 2. Start to note via Global Shortcut
 
 :memo: You need to allow mumemo.app to access "Accessibility" and "Screen recording" on macOS's Privacy options
-These permission is needed to get active window information.
+This permission is needed to get active window information.
 
 1. Press <kdb>CommandOrControl+Shift+X</kdb> (It can be customized by `mumemo.config.js`)
 2. Capture **focus area** and show note window​
