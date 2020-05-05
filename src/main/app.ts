@@ -515,7 +515,7 @@ export const run = async ({
         fs.appendFileSync(
             path.join(config.outputDir, config.outputFileName),
             config.outputContentTemplate({
-                imgPath: outputImageFileName,
+                imgPath: path.join(config.outputDir, config.outputImageDirPrefix, outputImageFileName),
                 inputContent,
                 selectedContent,
             }),
