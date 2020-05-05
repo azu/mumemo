@@ -483,7 +483,9 @@ export const run = async ({
                 title: activeWindow?.title ?? "unknown",
             })
         );
-        const outputFileName = processingState.use(path.join(config.outputDir, outputImageFileName));
+        const outputFileName = processingState.use(
+            path.join(config.outputDir, config.outputImageDirPrefix, outputImageFileName)
+        );
         const { outputImage } = await createFocusImage({
             DEBUG,
             rectangles,

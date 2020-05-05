@@ -14,6 +14,12 @@ export type UserConfig = {
      */
     outputFileName: string;
     /**
+     * Output image directory prefix
+     * If you want to put images to same dir with README.md, set "."
+     * Default: img/
+     */
+    outputImageDirPrefix: string;
+    /**
      * format input by this function and append the result
      * Default: for markdown
      */
@@ -62,6 +68,7 @@ export const defaultShortcutKey = "CommandOrControl+Shift+X";
 export const createUserConfig = ({ app, path, activeWindow }: UserConfigCreatorArgs): UserConfig => {
     return {
         outputFileName: "README.md",
+        outputImageDirPrefix: "img/",
         // Output Template Function
         outputContentTemplate: ({ imgPath, selectedContent, inputContent }: OutputContentTemplateArgs) => {
             return (
