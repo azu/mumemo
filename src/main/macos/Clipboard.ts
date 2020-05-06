@@ -30,7 +30,6 @@ function createModifier(modifierOption: ModifierOption) {
 }
 
 const tryTask = (task: () => boolean, interval: number, count: number = 0): Promise<boolean> => {
-    console.log("try", count);
     return new Promise((resolve) => {
         setTimeout(() => {
             const result = task();

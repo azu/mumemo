@@ -46,7 +46,8 @@ app.appendChild(saveButton);
 app.appendChild(cancelButton);
 const editor = CodeMirror.fromTextArea(textarea, {
     mode: "markdown",
-    lineNumbers: true,
+    lineNumbers: false,
+    lineWrapping: true,
     extraKeys: {
         Enter: "newlineAndIndentContinueMarkdownList",
         "Cmd-Enter": function () {
