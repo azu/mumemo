@@ -7,7 +7,7 @@ import Jimp from "jimp";
 import * as path from "path";
 import tmp from "tmp";
 import { PreviewBrowser } from "./PreviewBrowser";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import shortid from "shortid";
 import sanitize from "sanitize-filename";
 import * as os from "os";
@@ -473,12 +473,23 @@ export const run = async ({
             const spaceToUnderBar = stripedNamed.replace(/\s/g, "_");
             return sanitize(spaceToUnderBar);
         };
-        const createOutputImageFileName = ({ owner, title }: { owner: string; title: string }) => {
-            // TODO: img-prefix?
-            return `${owner}-${title}-${dayjs().format("YYYY-MM-DD")}-${shortid()}.png`;
+        const createOutputImageFileName = ({
+            dayjs,
+            owner,
+            title,
+            id,
+        }: {
+            dayjs: Dayjs;
+            owner: string;
+            title: string;
+            id: string;
+        }) => {
+            return `${dayjs.format("YYYY-MM-DD")}-${owner}-${title}-${id}.png`;
         };
         const outputImageFileName = sanitizeFileName(
             createOutputImageFileName({
+                id: shortid(),
+                dayjs: dayjs(),
                 owner: activeWindow?.owner.name ?? "unknown",
                 title: activeWindow?.title ?? "unknown",
             })
@@ -522,7 +533,9 @@ export const run = async ({
             "utf-8"
         );
     } catch (error) {
-        console.error(error);
+        if (config.DEBUG) {
+            console.log(error.message);
+        }
         // when occur error{timeout,cancel}, cleanup it and suppress error
         await cancelTask();
     }

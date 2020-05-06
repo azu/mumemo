@@ -29,6 +29,19 @@ function createModifier(modifierOption: ModifierOption) {
     return modifiers;
 }
 
+const tryTask = (task: () => boolean, interval: number, count: number = 0): Promise<boolean> => {
+    console.log("try", count);
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            const result = task();
+            if (!result) {
+                return tryTask(task, interval, count + 1);
+            }
+            return resolve(result);
+        }, interval);
+    });
+};
+
 export function copySelectedText(): Promise<string | undefined> {
     const modifiers = createModifier({
         command: true,
@@ -43,7 +56,12 @@ export function copySelectedText(): Promise<string | undefined> {
         modifiers
     )
         .then(() => {
-            return timeout(1000);
+            return Promise.race([
+                tryTask(() => {
+                    return oldText !== clipboard.readText();
+                }, 16),
+                timeout(1000),
+            ]);
         })
         .then(() => {
             const newText = clipboard.readText();

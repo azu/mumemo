@@ -43,6 +43,7 @@ cancelButton.addEventListener("click", () => {
     cancel();
 });
 app.appendChild(saveButton);
+app.appendChild(cancelButton);
 const editor = CodeMirror.fromTextArea(textarea, {
     mode: "markdown",
     lineNumbers: true,
