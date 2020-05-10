@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain } from "electron";
+import { BrowserWindow, ipcMain, clipboard, nativeImage } from "electron";
 import windowStateKeeper from "electron-window-state";
 import path from "path";
 import { format as formatUrl } from "url";
@@ -113,7 +113,15 @@ export class PreviewBrowser {
     }
 
     // resolve this promise then save text
-    async waitForInput({ timeoutMs, autoSave }: { timeoutMs: number; autoSave: boolean }): Promise<string> {
+    async waitForInput({
+        imgSrc,
+        timeoutMs,
+        autoSave,
+    }: {
+        imgSrc: string;
+        timeoutMs: number;
+        autoSave: boolean;
+    }): Promise<string> {
         const onCancel = () => {
             this.closedDeferred.reject(new Error("Cancel by user"));
             this.mainWindow?.close();
@@ -122,9 +130,16 @@ export class PreviewBrowser {
             this.closedDeferred.resolve(value);
             this.mainWindow?.close();
         };
+        const onCopy = (_event: any, value: string) => {
+            clipboard.write({
+                text: value,
+                image: nativeImage.createFromDataURL(imgSrc),
+            });
+        };
         return new Promise((resolve, reject) => {
             ipcMain.once("save", onSave);
             ipcMain.once("cancel", onCancel);
+            ipcMain.addListener("copy", onCopy);
             // focus at once, not timeout
             // timeout -> hide and save -> reset
             this.timeoutId = setTimeout(() => {
@@ -148,6 +163,7 @@ export class PreviewBrowser {
                 .finally(() => {
                     ipcMain.off("save", onSave);
                     ipcMain.off("cancel", onCancel);
+                    ipcMain.off("copy", onCopy);
                 });
         });
     }
@@ -158,6 +174,7 @@ export class PreviewBrowser {
             this.mainWindow.show();
         }
     }
+
     showInactive() {
         if (this.mainWindow) {
             this.mainWindow.showInactive();

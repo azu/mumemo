@@ -19,7 +19,7 @@ imgDiv.className = "img";
 const img = document.createElement("img");
 imgDiv.appendChild(img);
 app.appendChild(imgDiv);
-// save button
+// Save button
 const saveButton = document.createElement("button");
 saveButton.className = "saveButton";
 saveButton.textContent = "Save";
@@ -27,6 +27,10 @@ saveButton.textContent = "Save";
 const cancelButton = document.createElement("button");
 cancelButton.className = "cancelButton";
 cancelButton.textContent = "Cancel";
+// Copy
+const copyButton = document.createElement("button");
+copyButton.className = "copyButton";
+copyButton.textContent = "Copy";
 
 function save() {
     ipcRenderer.send("save", editor.getValue());
@@ -36,14 +40,22 @@ function cancel() {
     ipcRenderer.send("cancel");
 }
 
+function copy() {
+    ipcRenderer.send("copy", editor.getValue());
+}
+
 saveButton.addEventListener("click", () => {
     save();
 });
 cancelButton.addEventListener("click", () => {
     cancel();
 });
+copyButton.addEventListener("click", () => {
+    copy();
+});
 app.appendChild(saveButton);
 app.appendChild(cancelButton);
+app.appendChild(copyButton);
 const editor = CodeMirror.fromTextArea(textarea, {
     mode: "markdown",
     lineNumbers: false,

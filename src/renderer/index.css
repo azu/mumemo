@@ -63,11 +63,29 @@ img {
     border-radius: 4px;
 }
 
-.saveButton:hover {
+.cancelButton:hover {
     background: #ff6779;
     color: white;
 }
 
+.copyButton {
+    position: fixed;
+    left: 50%;
+    bottom: 1rem;
+    /* button */
+    font-size: 14px;
+    display: inline-block;
+    padding: 0.5em 1em;
+    text-decoration: none;
+    color: #468937;
+    border: solid 2px #468937;
+    border-radius: 4px;
+}
+
+.copyButton:hover {
+    background: #468937;
+    color: white;
+}
 /* CodeMirror */
 .CodeMirror {
     font-size: 16px;

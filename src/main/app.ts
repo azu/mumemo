@@ -512,6 +512,7 @@ export const run = async ({
         const outputImageBase64 = await outputImage.getBase64Async("image/png");
         previewBrowser.updateImage(outputImageBase64);
         const input = await previewBrowser.waitForInput({
+            imgSrc: outputImageBase64,
             autoSave: config.autoSave,
             timeoutMs: config.autoSaveTimeoutMs,
         });
