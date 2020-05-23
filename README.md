@@ -1,5 +1,7 @@
 # mumemo
 
+![mumemo](docs/resources/mumemo.jpg)
+
 Mumemo is screenshot-driven note application.
 Mumemo is also No-UI(User Interaction) note application.
 
