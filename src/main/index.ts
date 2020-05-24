@@ -1,4 +1,4 @@
-import { app, dialog, globalShortcut, Menu, Tray } from "electron";
+import { app, dialog, globalShortcut, Menu, Tray, shell } from "electron";
 import { Deferred } from "./Deferred";
 import { timeout } from "./timeout";
 import activeWin from "active-win";
@@ -171,12 +171,23 @@ const onReady = async (): Promise<any> => {
             label: `Set output directory`,
             click: async () => {
                 const result = await openDialogReturnValuePromise();
-                console.log("result", result);
                 if (result.canceled) {
                     return;
                 }
                 outputDir = result.filePaths[0];
                 store.set("output-dir", outputDir);
+            },
+        },
+        {
+            label: "Open content file",
+            click: async () => {
+                const config: AppConfig = {
+                    ...createUserConfig({ app, path }),
+                    ...(userConfig.create ? userConfig.create({ app, path }) : {}),
+                    outputDir,
+                };
+                const outputContentFileName = path.join(outputDir, config.outputContentFileName);
+                shell.openItem(outputContentFileName);
             },
         },
     ]);

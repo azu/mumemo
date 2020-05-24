@@ -99,7 +99,7 @@ export type UserConfig = {
      * Output file name
      * Default: README.md
      */
-    outputFileName: string;
+    outputContentFileName: string;
     /**
      * format input by this function and append the result
      * Default: for markdown

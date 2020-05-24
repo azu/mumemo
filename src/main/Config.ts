@@ -9,10 +9,10 @@ export type UserConfig = {
      */
     DEBUG: boolean;
     /**
-     * Output file name
+     * Output content file name
      * Default: README.md
      */
-    outputFileName: string;
+    outputContentFileName: string;
     /**
      * Output image directory prefix
      * If you want to put images to same dir with README.md, set "."
@@ -52,7 +52,7 @@ export type UserConfig = {
      */
     screenshotSearchRectangleMaxCount: number;
 };
-export type UserConfigCreatorArgs = { app: Electron.App; path: typeof path; activeWindow: activeWin.Result };
+export type UserConfigCreatorArgs = { app: Electron.App; path: typeof path; activeWindow?: activeWin.Result };
 export type OutputContentTemplateArgs = {
     imgPath: string;
     selectedContent: {
@@ -67,7 +67,7 @@ export type OutputContentTemplateArgs = {
 export const defaultShortcutKey = "CommandOrControl+Shift+X";
 export const createUserConfig = ({ app, path, activeWindow }: UserConfigCreatorArgs): UserConfig => {
     return {
-        outputFileName: "README.md",
+        outputContentFileName: "README.md",
         outputImageDirPrefix: "img/",
         // Output Template Function
         outputContentTemplate: ({ imgPath, selectedContent, inputContent }: OutputContentTemplateArgs) => {

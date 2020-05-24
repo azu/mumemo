@@ -525,7 +525,7 @@ export const run = async ({
             value: markdownEscaper.escape(clipboardText.trim()),
         };
         fs.appendFileSync(
-            path.join(config.outputDir, config.outputFileName),
+            path.join(config.outputDir, config.outputContentFileName),
             config.outputContentTemplate({
                 imgPath: path.join(config.outputImageDirPrefix, outputImageFileName),
                 inputContent,
