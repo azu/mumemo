@@ -168,7 +168,7 @@ const onReady = async (): Promise<any> => {
             label: `Output: ${outputDir}`,
         },
         {
-            label: `Set output directory`,
+            label: `Change output directory`,
             click: async () => {
                 const result = await openDialogReturnValuePromise();
                 if (result.canceled) {
@@ -177,6 +177,9 @@ const onReady = async (): Promise<any> => {
                 outputDir = result.filePaths[0];
                 store.set("output-dir", outputDir);
             },
+        },
+        {
+            type: "separator",
         },
         {
             label: "Open content file",
@@ -189,6 +192,9 @@ const onReady = async (): Promise<any> => {
                 const outputContentFileName = path.join(outputDir, config.outputContentFileName);
                 shell.openItem(outputContentFileName);
             },
+        },
+        {
+            type: "separator",
         },
         {
             label: "Quit",
