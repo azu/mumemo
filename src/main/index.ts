@@ -190,6 +190,12 @@ const onReady = async (): Promise<any> => {
                 shell.openItem(outputContentFileName);
             },
         },
+        {
+            label: "Quit",
+            click: async () => {
+                app.exit(0);
+            },
+        },
     ]);
     tray.setToolTip("Mumemo");
     tray.setContextMenu(contextMenu);
