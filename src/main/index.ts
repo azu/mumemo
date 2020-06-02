@@ -1,4 +1,4 @@
-import { app, dialog, globalShortcut, Menu, Tray, shell } from "electron";
+import { app, dialog, globalShortcut, Menu, Tray, shell, BrowserWindow } from "electron";
 import { Deferred } from "./Deferred";
 import { timeout } from "./timeout";
 import activeWin from "active-win";
@@ -7,6 +7,7 @@ import path from "path";
 import { AppConfig, run } from "./app";
 import * as fs from "fs";
 import Store from "electron-store";
+import OpenDialogOptions = Electron.OpenDialogOptions;
 
 const store = new Store();
 const log = require("electron-log");
@@ -128,13 +129,18 @@ const onReady = async (): Promise<any> => {
     // FIXME: dynamic require
     // electron-webpack does not support require out of app
     const userConfig = typeof userConfigPath === "string" ? eval(`require("${userConfigPath}")`) : {};
-    const openDialogReturnValuePromise = () => {
-        return dialog.showOpenDialog({
+    const openDialogReturnValuePromise = (defaultDir?: string) => {
+        const focusedWindow = BrowserWindow.getFocusedWindow();
+        const options: OpenDialogOptions = {
             properties: ["openDirectory", "createDirectory"],
             title: "Select a output directory",
-            defaultPath: path.join(app.getPath("documents")),
+            defaultPath: defaultDir ?? path.join(app.getPath("documents")),
             buttonLabel: "Save to here",
-        });
+        };
+        if (focusedWindow) {
+            return dialog.showOpenDialog(focusedWindow, options);
+        }
+        return dialog.showOpenDialog(options);
     };
     let outputDir = store.get("output-dir");
     if (!outputDir) {
@@ -170,7 +176,7 @@ const onReady = async (): Promise<any> => {
         {
             label: `Change output directory`,
             click: async () => {
-                const result = await openDialogReturnValuePromise();
+                const result = await openDialogReturnValuePromise(outputDir);
                 if (result.canceled) {
                     return;
                 }
