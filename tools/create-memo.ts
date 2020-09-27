@@ -40,9 +40,10 @@ export const cli = meow(
       $ node create-memo [file]
  
     Options
+      --output    [Path:String] output directory path [required]
 
     Examples
-      $ node --require ts-node/register create-memo.ts path/to/memo.json --out path/to/memo
+      $ node --require ts-node/register create-memo.ts path/to/memo.json --output path/to/memo
 `,
     {
         flags: {
