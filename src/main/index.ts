@@ -1,11 +1,11 @@
 import { app, dialog, globalShortcut, Menu, Tray, shell, BrowserWindow } from "electron";
-import { Deferred } from "./Deferred";
 import { timeout } from "./timeout";
 import activeWin from "active-win";
 import { createUserConfig, defaultShortcutKey } from "./Config";
 import path from "path";
 import { AppConfig, run } from "./app";
 import * as fs from "fs";
+import AbortController from "abort-controller";
 import Store from "electron-store";
 import OpenDialogOptions = Electron.OpenDialogOptions;
 
@@ -54,7 +54,7 @@ if (!gotTheLock) {
 }
 const appProcess = {
     isProcessing: false,
-    abortDeferred: new Deferred(),
+    abortDeferred: new AbortController(),
     async start(config: AppConfig, activeWindow: activeWin.Result) {
         if (appProcess.isProcessing) {
             await appProcess.cancel();
@@ -64,7 +64,7 @@ const appProcess = {
             await run({
                 config,
                 activeWindow,
-                abortablePromise: appProcess.abortDeferred.promise,
+                abortSignal: appProcess.abortDeferred.signal,
             });
         } catch (error) {
             if (error.message !== "Cancel") {
@@ -75,13 +75,12 @@ const appProcess = {
         }
     },
     finish() {
-        appProcess.abortDeferred.resolve();
-        appProcess.abortDeferred = new Deferred<any>();
+        appProcess.abortDeferred = new AbortController();
         appProcess.isProcessing = false;
     },
     async cancel() {
-        appProcess.abortDeferred.reject(new Error("Cancel"));
-        appProcess.abortDeferred = new Deferred<any>();
+        appProcess.abortDeferred.abort();
+        appProcess.abortDeferred = new AbortController();
         appProcess.isProcessing = false;
         await timeout(16);
     },
@@ -142,30 +141,40 @@ const onReady = async (): Promise<any> => {
         }
         return dialog.showOpenDialog(options);
     };
-    let outputDir = store.get("output-dir");
+    let outputDir = store.get("output-dir") as string | undefined;
     if (!outputDir) {
         const result = await openDialogReturnValuePromise();
         if (result.canceled) {
             return onReady();
         }
-        outputDir = result.filePaths[0];
+        outputDir = result.filePaths[0] as string;
         store.set("output-dir", outputDir);
+    }
+    if (!outputDir) {
+        throw new Error("outputDir is not found");
     }
     // Unregister a shortcut.
     globalShortcut.unregister(userConfig.shortcutKey ?? defaultShortcutKey);
     globalShortcut.register(userConfig.shortcutKey ?? defaultShortcutKey, () => {
-        const activeInfo = activeWin.sync();
-        if (!activeInfo) {
-            console.error(new Error("Not found active window"));
-            return;
+        try {
+            const activeInfo = activeWin.sync();
+            if (!activeInfo) {
+                console.error(new Error("Not found active window"));
+                return;
+            }
+            const outputDir = store.get("output-dir") || path.join(app.getPath("documents"), "mumemo");
+            const config: AppConfig = {
+                ...createUserConfig({ app, path, activeWindow: activeInfo }),
+                ...(userConfig.create ? userConfig.create({ app, path, activeWindow: activeInfo }) : {}),
+                outputDir,
+            };
+            appProcess.start(config, activeInfo);
+        } catch (error) {
+            console.log(
+                "mumemo requires the accessibility permission in “System Preferences › Security & Privacy › Privacy › Accessibility"
+            );
+            console.error(error);
         }
-        const outputDir = store.get("output-dir") || path.join(app.getPath("documents"), "mumemo");
-        const config: AppConfig = {
-            ...createUserConfig({ app, path, activeWindow: activeInfo }),
-            ...(userConfig.create ? userConfig.create({ app, path, activeWindow: activeInfo }) : {}),
-            outputDir,
-        };
-        appProcess.start(config, activeInfo);
     });
     // @ts-ignore
     const tray = new Tray(path.join(__static, "tray.png"));
@@ -190,13 +199,16 @@ const onReady = async (): Promise<any> => {
         {
             label: "Open content file",
             click: async () => {
+                if (!outputDir) {
+                    return;
+                }
                 const config: AppConfig = {
                     ...createUserConfig({ app, path }),
                     ...(userConfig.create ? userConfig.create({ app, path }) : {}),
                     outputDir,
                 };
                 const outputContentFileName = path.join(outputDir, config.outputContentFileName);
-                shell.openItem(outputContentFileName);
+                shell.openPath(outputContentFileName);
             },
         },
         {

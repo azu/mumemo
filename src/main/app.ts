@@ -1,6 +1,6 @@
 import { screen } from "electron";
 import execa from "execa";
-import { createFocusImage, getReactFromImage, getReactFromImageResult, getReactFromImageResults } from "./detect";
+import { createFocusImage, getReactFromImage } from "./detect";
 import fs from "fs";
 import Flatbush from "flatbush";
 import Jimp from "jimp";
@@ -98,11 +98,11 @@ export type AppConfig = UserConfig & {
 export const run = async ({
     config,
     activeWindow,
-    abortablePromise,
+    abortSignal,
 }: {
     config: AppConfig;
     activeWindow: activeWin.Result;
-    abortablePromise: Promise<void>;
+    abortSignal: AbortSignal;
 }) => {
     const processingState = {
         needCleanUpFiles: [] as string[],
@@ -134,10 +134,15 @@ export const run = async ({
         // clean non-saved files
         processingState.clean();
     };
-    abortablePromise.catch(cancelTask);
+    abortSignal.addEventListener("abort", () => cancelTask(), {
+        once: true,
+    });
     const race = <T extends any>(promise: Promise<T>): Promise<T> => {
+        if (abortSignal.aborted) {
+            return Promise.reject(new Error("Cancel"));
+        }
         // on cancel
-        return Promise.race([promise, abortablePromise]) as Promise<T>;
+        return promise as Promise<T>;
     };
     try {
         const DEBUG = config.DEBUG;
