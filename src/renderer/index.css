@@ -30,6 +30,12 @@ img {
     transition: background-image 0.5s ease-in;
 }
 
+.saveButton,
+.cancelButton,
+.cancelButton {
+    background: #ffffff;
+}
+
 .saveButton {
     position: fixed;
     right: 1rem;
@@ -86,6 +92,7 @@ img {
     background: #468937;
     color: white;
 }
+
 /* CodeMirror */
 .CodeMirror {
     font-size: 16px;
