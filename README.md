@@ -44,7 +44,7 @@ Additional installation steps on macOS:
 
 1. Setup **output directory**
 
-This app writes Markdown note(`README.md`) and screenshots into the output directory.
+This app writes Markdown notes (`README.md`) and screenshots into the output directory.
 
 ### 2. Start to note via Global Shortcut
 
