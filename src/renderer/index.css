@@ -1,0 +1,114 @@
+html,
+body,
+#app {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 4px;
+    margin: 0;
+    background: transparent;
+}
+
+#app {
+    margin: 0;
+}
+
+#app .CodeMirror {
+    height: auto;
+}
+
+.img.placeholder {
+    opacity: 0.5;
+}
+
+.img,
+img {
+    width: 100%;
+    height: 100%;
+    background-size: contain;
+    background-repeat: no-repeat;
+    transition: background-image 0.5s ease-in;
+}
+
+.saveButton,
+.cancelButton,
+.cancelButton {
+    background: #ffffff;
+}
+
+.saveButton {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    /* button */
+    font-size: 14px;
+    display: inline-block;
+    padding: 0.5em 1em;
+    text-decoration: none;
+    color: #67c5ff;
+    border: solid 2px #67c5ff;
+    border-radius: 4px;
+}
+
+.saveButton:hover {
+    background: #67c5ff;
+    color: white;
+}
+
+.cancelButton {
+    position: fixed;
+    left: 1rem;
+    bottom: 1rem;
+    /* button */
+    font-size: 14px;
+    display: inline-block;
+    padding: 0.5em 1em;
+    text-decoration: none;
+    color: #ff6779;
+    border: solid 2px #ff6779;
+    border-radius: 4px;
+}
+
+.cancelButton:hover {
+    background: #ff6779;
+    color: white;
+}
+
+.copyButton {
+    position: fixed;
+    left: 50%;
+    bottom: 1rem;
+    /* button */
+    font-size: 14px;
+    display: inline-block;
+    padding: 0.5em 1em;
+    text-decoration: none;
+    color: #468937;
+    border: solid 2px #468937;
+    border-radius: 4px;
+}
+
+.copyButton:hover {
+    background: #468937;
+    color: white;
+}
+
+/* CodeMirror */
+.CodeMirror {
+    font-size: 16px;
+    border-top: 1px solid black;
+    border-bottom: 1px solid black;
+}
+
+.cm-s-default .cm-trailing-space-a:before,
+.cm-s-default .cm-trailing-space-b:before {
+    position: absolute;
+    content: "\00B7";
+    color: #777;
+}
+
+.cm-s-default .cm-trailing-space-new-line:before {
+    position: absolute;
+    content: "\21B5";
+    color: #777;
+}

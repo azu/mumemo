@@ -1,0 +1,11 @@
+.DS_Store
+dist/
+node_modules/
+thumbs.db
+.idea/
+*.log
+
+src/**/*.js
+src/**/*.map
+tools/**/*.js
+tools/**/*.map
