@@ -129,7 +129,10 @@ const onReady = async (): Promise<any> => {
     // electron-webpack does not support require out of app
     const userConfig = typeof userConfigPath === "string" ? eval(`require("${userConfigPath}")`) : {};
     const openDialogReturnValuePromise = (defaultDir?: string) => {
-        const focusedWindow = BrowserWindow.getFocusedWindow();
+        const focusedWindow = new BrowserWindow({
+            show: false,
+            alwaysOnTop: true,
+        });
         const options: OpenDialogOptions = {
             properties: ["openDirectory", "createDirectory"],
             title: "Select a output directory",
