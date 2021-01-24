@@ -63,7 +63,11 @@ export function copySelectedText(): Promise<string | undefined> {
             ]);
         })
         .then(() => {
-            const newText = clipboard.readText();
+            const newText = clipboard.readText().trim();
+            if (!newText && oldText) {
+                clipboard.writeText(oldText);
+                return oldText;
+            }
             return oldText !== newText ? newText : undefined;
         })
         .catch(() => {
