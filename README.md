@@ -61,7 +61,7 @@ The app writes the input memo and captured image into **output directory**.
 
 ## Configuration
 
-You can customize key config and others by `~/.config/mumemo/mumemo.config.js`
+You can customize key config and others by `~/.config/numemo/numemo.config.js`.
 
 - `shortcutKey`: shortcut key for launch
     - See also the key syntax: <https://www.electronjs.org/docs/api/accelerator>
@@ -150,6 +150,8 @@ The combination of `autoFocus: false` and `autoSave: true` that allow to save wi
     - You can add a note if you want
 3. Close the window and save it after 3 seconds
 
+`~/.config/numemo/numemo.config.js`:
+
 ```js
 module.exports.shortcutKey = "CommandOrControl+Shift+X"
 module.exports.create = ({ app, path }) => {
@@ -157,6 +159,22 @@ module.exports.create = ({ app, path }) => {
         autoFocus: false,
         autoSave: true,
         autoSaveTimeoutMs: 3 * 1000,
+    };
+}
+```
+
+### Change behavior by each app
+
+You can change config by each app.
+
+```ts
+module.exports.create = ({ app, path, activeWindow }) => {
+    // Note: macOS's activeWindow has owner.bundleId
+    const isKindle = activeWindow?.owner?.bundleId?.includes("Kindle")
+    return {
+        autoFocus: true,
+        autoSave: true,
+        quoteFrom: isKindle ? "clipboard" : "selectedText"
     };
 }
 ```
