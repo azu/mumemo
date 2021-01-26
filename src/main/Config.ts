@@ -40,6 +40,12 @@ export type UserConfig = {
      */
     autoSaveTimeoutMs: number;
     /**
+     * if quoteFrom is clipboard, quote text from clipboard
+     * if quoteFrom is selectedText, quote text from selected text
+     * Default: "selectedText"
+     */
+    quoteFrom: "clipboard" | "selectedText";
+    /**
      * bound ratio for screenshot
      * Increase actual focus area using this ratio.
      * Default: 1.2
@@ -83,6 +89,7 @@ export const createUserConfig = ({ app, path, activeWindow }: UserConfigCreatorA
         autoSaveTimeoutMs: 30 * 1000,
         screenshotBoundRatio: 1.2,
         screenshotSearchRectangleMaxCount: 5,
+        quoteFrom: "selectedText",
         DEBUG: false,
     };
 };

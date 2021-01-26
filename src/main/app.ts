@@ -1,4 +1,4 @@
-import { screen } from "electron";
+import { clipboard, screen } from "electron";
 import execa from "execa";
 import { createFocusImage, getReactFromImage } from "./detect";
 import fs from "fs";
@@ -170,7 +170,9 @@ export const run = async ({
         if (!screenshotSuccess) {
             return;
         }
-        const clipboardTextPromise = copySelectedText();
+        const clipboardTextPromise = await (config.quoteFrom === "selectedText"
+            ? copySelectedText()
+            : clipboard.readText());
         const rectangles = await race(
             getReactFromImage(screenshotFileName, {
                 debugOutputPath: DEBUG ? path.join(config.outputDir, "_debug-step2.png") : undefined,
