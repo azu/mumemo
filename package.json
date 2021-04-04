@@ -39,7 +39,7 @@
     "jimp": "^0.16.1",
     "markdown-escapes": "^1.0.4",
     "minimist": "^1.2.5",
-    "opencv-wasm": "^4.3.0-0.3.0",
+    "opencv-wasm": "4.3.0-0.3.0",
     "pureimage": "^0.2.1",
     "sanitize-filename": "^1.6.3",
     "shortid": "^2.2.15",
