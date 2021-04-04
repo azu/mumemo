@@ -38,6 +38,15 @@ Additional installation steps on macOS:
 1. Select `mumemo.app`
 2. Open context menu and Click "Open"
 
+:warning: require permission on macOS.
+Open the app, and you need to add permission for mumemo.app
+
+- **Accessibility**
+    - use accessibility permission to get `activeWindow` object
+    - `activeWindow` includes active app info like bundle.id, url, title.
+- **Screen Recording**
+    - use Screen Recording permission to get screenshot
+
 ## Usage
 
 ### 1. Setup 
