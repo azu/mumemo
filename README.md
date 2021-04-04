@@ -220,7 +220,7 @@ Debug
 Release
 
     npm version {patch,minor,major}
-    npm push
+    git push --tags
 
 ## Contributing
 
