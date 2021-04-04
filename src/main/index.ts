@@ -167,9 +167,12 @@ const onReady = async (): Promise<any> => {
             }
             const outputDir = store.get("output-dir") || path.join(app.getPath("documents"), "mumemo");
             const config: AppConfig = {
+                // 1. user config
+                // 2. store.get(output-dir)
+                // 3. Default path
+                outputDir,
                 ...createUserConfig({ app, path, activeWindow: activeInfo }),
                 ...(userConfig.create ? userConfig.create({ app, path, activeWindow: activeInfo }) : {}),
-                outputDir,
             };
             appProcess.start(config, activeInfo);
         } catch (error) {

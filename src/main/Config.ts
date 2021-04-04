@@ -9,6 +9,12 @@ export type UserConfig = {
      */
     DEBUG: boolean;
     /**
+     * Output dir path
+     * if set the path, use the path instead of stored path
+     * Default: use stored path
+     */
+    outputDir?: string;
+    /**
      * Output content file name
      * Default: README.md
      */
