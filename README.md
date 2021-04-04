@@ -210,6 +210,18 @@ Tail logging
 $ tail -F ~/Library/Logs/mumemo/main.log
 ```
 
+## Developing
+
+Debug
+
+    yarn install
+    yarn dev
+    
+Release
+
+    npm version {patch,minor,major}
+    npm push
+
 ## Contributing
 
 1. Fork it!
