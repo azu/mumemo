@@ -96,10 +96,22 @@ export type UserConfig = {
      */
     DEBUG: boolean;
     /**
-     * Output file name
+     * Output dir path
+     * if set the path, use the path instead of stored path
+     * Default: use stored path
+     */
+    outputDir?: string;
+    /**
+     * Output content file name
      * Default: README.md
      */
     outputContentFileName: string;
+    /**
+     * Output image directory prefix
+     * If you want to put images to same dir with README.md, set "."
+     * Default: img/
+     */
+    outputImageDirPrefix: string;
     /**
      * format input by this function and append the result
      * Default: for markdown
@@ -121,17 +133,23 @@ export type UserConfig = {
      */
     autoSaveTimeoutMs: number;
     /**
+     * if quoteFrom is clipboard, quote text from clipboard
+     * if quoteFrom is selectedText, quote text from selected text
+     * Default: "selectedText"
+     */
+    quoteFrom: "clipboard" | "selectedText";
+    /**
      * bound ratio for screenshot
      * Increase actual focus area using this ratio.
      * Default: 1.2
      */
     screenshotBoundRatio: number;
     /**
-     * Search count for related content that is included into screenshot result
+     * Max search count for related content that is included into screenshot result
      * The higher the number, screenshot size is large.
      * Default: 5
      */
-    screenshotSearchRectangleMaxCount: number
+    screenshotSearchRectangleMaxCount: number;
 };
 ```
 
