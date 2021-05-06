@@ -243,7 +243,11 @@ Debug
 
     yarn install
     yarn dev
-    
+
+Build
+
+    yarn dist
+
 Release
 
     npm version {patch,minor,major}
