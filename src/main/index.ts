@@ -99,7 +99,7 @@ const appProcess = {
 const getUserConfigFile = (): string | undefined => {
     try {
         const homedir = app.getPath("home");
-        const userConfigPathList = path.join(homedir, ".config/numemo/numemo.config.js");
+        const userConfigPathList = path.join(homedir, ".config/mumemo/mumemo.config.js");
         return fs.existsSync(userConfigPathList) ? userConfigPathList : undefined;
     } catch {
         return undefined;
