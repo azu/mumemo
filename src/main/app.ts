@@ -84,6 +84,7 @@ async function screenshot({
     screenshotFileName: string;
 }): Promise<boolean> {
     try {
+        // TODO: cross platform support
         await execa("screencapture", (windowId ? ["-o", "-l", windowId] : ["-o"]).concat(screenshotFileName));
         return true;
     } catch (error) {
