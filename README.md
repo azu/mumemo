@@ -24,6 +24,11 @@ Example of **focus area** workflow(`DEBUG:true`):
 
 > Screenshot from <https://git-scm.com/book/ja/v2>
 
+## Supports
+
+- [x] macOS
+- [ ] [cross platform support #6](https://github.com/azu/mumemo/issues/6)
+
 ## Installation
 
 > https://github.com/azu/mumemo/releases/latest
