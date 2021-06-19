@@ -63,6 +63,22 @@ export type UserConfig = {
      * Default: 5
      */
     screenshotSearchRectangleMaxCount: number;
+
+    /**
+     * if the rectangle count is over, mumemo give up to create focus image.
+     * Just use screenshot image instead of focus image
+     * Default: 80
+     */
+    screenshotGiveUpRectangleMaxCount: number;
+
+    /**
+     * if the factor value is defined, mumemo resize screenshot image with the factor.
+     * Retina display's the factor value is 2.
+     * display size * factor value is the result of screenshot image size.
+     * if you want to resize the screeenshot image size, set `1` to `screenshotResizeFactor`
+     * Default: displayFactor's value
+     */
+    screenshotResizeFactor?: number;
 };
 export type UserConfigCreatorArgs = { app: Electron.App; path: typeof path; activeWindow?: activeWin.Result };
 export type OutputContentTemplateArgs = {
@@ -95,6 +111,7 @@ export const createUserConfig = ({ app, path, activeWindow }: UserConfigCreatorA
         autoSaveTimeoutMs: 30 * 1000,
         screenshotBoundRatio: 1.2,
         screenshotSearchRectangleMaxCount: 5,
+        screenshotGiveUpRectangleMaxCount: 80,
         quoteFrom: "selectedText",
         DEBUG: false,
     };

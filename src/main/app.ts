@@ -14,6 +14,7 @@ import * as os from "os";
 import { copySelectedText } from "./macos/Clipboard";
 import { OutputContentTemplateArgs, UserConfig } from "./Config";
 import activeWin from "active-win";
+import { resizeScreenShotFitCurrentScreenBound } from "./resize";
 
 // binary search for the first value in the array bigger than the given
 function upperBound(value: any, arr: any) {
@@ -168,6 +169,33 @@ export const run = async ({
                 windowId: String(windowId),
             })
         );
+        // Some screenshot like `screencapture` command make larger size than display size.
+        // Resize to fit display size to reduce tasks
+        const resizedScreenshotFileName = DEBUG
+            ? path.join(config.outputDir, "_debug-step1.resized.png")
+            : screenshotFileName;
+        const normalizedDisplayScaleFactor =
+            config.screenshotResizeFactor && config.screenshotResizeFactor !== displayScaleFactor
+                ? config.screenshotResizeFactor
+                : displayScaleFactor;
+        const shouldResize =
+            config.screenshotResizeFactor !== undefined && config.screenshotResizeFactor !== displayScaleFactor;
+        // if user does not configure valid factor, skip it
+        if (DEBUG) {
+            console.log("normalizedDisplayScaleFactor", normalizedDisplayScaleFactor, " vs ", displayScaleFactor);
+            console.log("shouldResize", shouldResize);
+        }
+        if (shouldResize) {
+            await resizeScreenShotFitCurrentScreenBound({
+                DEBUG,
+                resizeSize: {
+                    width: currentScreenSize.width * normalizedDisplayScaleFactor,
+                    height: currentScreenSize.height * normalizedDisplayScaleFactor,
+                },
+                screenshotFileName,
+                resizedScreenshotFileName,
+            });
+        }
         if (!screenshotSuccess) {
             return;
         }
@@ -175,14 +203,14 @@ export const run = async ({
             ? copySelectedText()
             : clipboard.readText());
         const rectangles = await race(
-            getReactFromImage(screenshotFileName, {
+            getReactFromImage(resizedScreenshotFileName, {
                 debugOutputPath: DEBUG ? path.join(config.outputDir, "_debug-step2.png") : undefined,
             })
         );
         // Fast Preview
         const previewBrowser = await PreviewBrowser.instance();
         previewBrowser.reset();
-        const firstImage = await Jimp.read(screenshotFileName);
+        const firstImage = await Jimp.read(resizedScreenshotFileName);
         const firstImageBase64 = await firstImage.getBase64Async("image/png");
         previewBrowser.edit(``, firstImageBase64);
         // get clipboard text and show window as interactive
@@ -230,11 +258,11 @@ export const run = async ({
         const { outputImage } = await createFocusImage({
             DEBUG,
             rectangles,
-            displayScaleFactor,
+            displayScaleFactor: normalizedDisplayScaleFactor,
             currentAbsolutePoint,
             currentScreenBounce,
             currentScreenSize,
-            screenshotFileName,
+            screenshotFileName: resizedScreenshotFileName,
             outputFileName,
             screenshotBoundRatio: config.screenshotBoundRatio,
             config,

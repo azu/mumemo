@@ -86,8 +86,10 @@ export async function calculateWrapperRect({
     rects,
     relativePoint,
     screenshotBoundRatio,
+    displayScaleFactor,
     debugImage,
     debugContext,
+    currentScreenSize,
     DEBUG,
     config,
 }: {
@@ -96,10 +98,12 @@ export async function calculateWrapperRect({
     debugImage: any;
     debugContext: any;
     DEBUG: boolean;
+    currentScreenSize: { width: number; height: number };
+    displayScaleFactor: number;
     screenshotBoundRatio: number;
     config: AppConfig;
 }) {
-    if (config.DEBUG) {
+    if (DEBUG) {
         if (screenshotBoundRatio < 0) {
             console.warn("boundRatio should be >= 0");
         }
@@ -116,6 +120,19 @@ export async function calculateWrapperRect({
             height: rect.height + paddingY * 2,
         };
     });
+    if (boundRects.length > config.screenshotGiveUpRectangleMaxCount) {
+        if (DEBUG) {
+            console.log("Give up to create focus image because boundRects count is " + boundRects.length);
+        }
+        return {
+            wrapperRect: {
+                minX: 0,
+                minY: 0,
+                maxX: currentScreenSize.width * displayScaleFactor,
+                maxY: currentScreenSize.height * displayScaleFactor,
+            },
+        };
+    }
     for (const boundRect of boundRects) {
         flatbush.add(boundRect.x, boundRect.y, boundRect.x + boundRect.width, boundRect.y + boundRect.height);
         if (DEBUG) {
@@ -281,6 +298,7 @@ export const createFocusImage = async ({
     };
     // Draw Cursor
     if (DEBUG) {
+        console.log("currentScreenSize", currentScreenSize);
         console.log("currentScreenBounce", currentScreenBounce);
         console.log("currentAbsolutePoint", currentAbsolutePoint);
         console.log("displayScaleFactor", displayScaleFactor);
@@ -291,7 +309,9 @@ export const createFocusImage = async ({
     const { wrapperRect } = await calculateWrapperRect({
         rects: filteredRects,
         relativePoint: relativePointCursorInScreen,
+        displayScaleFactor,
         screenshotBoundRatio: screenshotBoundRatio,
+        currentScreenSize,
         debugContext: context,
         debugImage,
         DEBUG: DEBUG,
