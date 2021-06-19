@@ -235,6 +235,8 @@ When you use 4K display, resize screenshot size to 1/2.
 module.exports.create = ({ app, path, activeWindow }) => {
     return {
         // If you use 4K display, resize 1/2 screenshot size
+        // 4K display will be 2 by default.
+        // so screenshotResizeFactor is `1` that equal to 1/2 size.
         screenshotResizeFactor: activeWindow?.bounds?.width >= 2560 ? 1 : undefined
     };
 }
