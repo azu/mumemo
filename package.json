@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "mumemo",
-  "version": "0.6.2",
+  "version": "0.7.0",
   "license": "MIT",
   "main": "./dist/main/main.js",
   "scripts": {
