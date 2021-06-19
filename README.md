@@ -227,6 +227,19 @@ module.exports.create = ({ app, path, activeWindow }) => {
 }
 ```
 
+### Resize screenshot size by screen size
+
+When you use 4K display, resize screenshot size to 1/2.
+
+```ts
+module.exports.create = ({ app, path, activeWindow }) => {
+    return {
+        // If you use 4K display, resize 1/2 screenshot size
+        screenshotResizeFactor: activeWindow?.bounds?.width >= 2560 ? 1 : undefined
+    };
+}
+```
+
 ## Motivation
 
 I've liked to write note and capture the screenshot during reading a book.
