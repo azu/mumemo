@@ -205,16 +205,18 @@ const onReady = async (): Promise<any> => {
         {
             label: "Open content file",
             click: async () => {
+                const activeInfo = activeWin.sync() || {};
                 if (!outputDir) {
                     return;
                 }
                 const config: AppConfig = {
                     ...createUserConfig({ app, path }),
-                    ...(userConfig.create ? userConfig.create({ app, path }) : {}),
+                    ...(userConfig.create ? userConfig.create({ app, path, activeWindow: activeInfo }) : {}),
                     outputDir,
                 };
                 const outputContentFileName = path.join(outputDir, config.outputContentFileName);
-                shell.openPath(outputContentFileName);
+                console.log("outputContentFileName", outputContentFileName);
+                await shell.openPath(outputContentFileName);
             },
         },
         {
