@@ -3,6 +3,7 @@ import windowStateKeeper from "electron-window-state";
 import path from "path";
 import { format as formatUrl } from "url";
 import { Deferred } from "./Deferred";
+import { UserConfig } from "./Config";
 
 const Positioner = require("electron-positioner");
 
@@ -16,6 +17,9 @@ export class PreviewBrowser {
     private focusAtOnce: boolean;
     private canceled: boolean;
     private timeoutId: NodeJS.Timeout | null;
+    private positioner: {
+        move(position: UserConfig["inputWindowPosition"]): void;
+    };
 
     get isDeactived() {
         return this.mainWindow === null;
@@ -36,6 +40,7 @@ export class PreviewBrowser {
 
     constructor() {
         this.mainWindow = this.createMainWindow();
+        this.positioner = new Positioner(this.mainWindow);
         this.closedDeferred = new Deferred<string>();
         this.focusAtOnce = false;
         this.canceled = false;
@@ -76,11 +81,6 @@ export class PreviewBrowser {
                     slashes: true,
                 })
             );
-        }
-
-        const positioner = new Positioner(browserWindow);
-        if (mainWindowState.y === undefined || mainWindowState.x === undefined) {
-            positioner.move("topRight");
         }
         browserWindow.on("close", (event) => {
             event.preventDefault();
@@ -168,16 +168,18 @@ export class PreviewBrowser {
         });
     }
 
-    show() {
+    show(config: UserConfig) {
         if (this.mainWindow) {
             this.focusAtOnce = true;
             this.mainWindow.show();
+            this.positioner.move(config.inputWindowPosition);
         }
     }
 
-    showInactive() {
+    showInactive(config: UserConfig) {
         if (this.mainWindow) {
             this.mainWindow.showInactive();
+            this.positioner.move(config.inputWindowPosition);
         }
     }
 

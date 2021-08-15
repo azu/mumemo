@@ -52,6 +52,37 @@ export type UserConfig = {
      */
     quoteFrom: "clipboard" | "selectedText";
     /**
+     * Preview window position
+     * Default: topLeft
+     */
+    inputWindowPosition:
+        | `trayLeft`
+        | `trayBottomLeft`
+        | `trayRight`
+        | `trayBottomRight`
+        | `trayCenter`
+        | `trayBottomCenter`
+        | `topLeft`
+        | `topRight`
+        | `bottomLeft`
+        | `bottomRight`
+        | `topCenter`
+        | `bottomCenter`
+        | `leftCenter`
+        | `rightCenter`
+        | `center`;
+    /**
+     * Send key stroke when ready to input window
+     * Note: macOS only
+     */
+    sendKeyStrokeWhenReadyInputWindow?: {
+        key: string;
+        shift?: boolean;
+        control?: boolean;
+        option?: boolean;
+        command?: boolean;
+    };
+    /**
      * bound ratio for screenshot
      * Increase actual focus area using this ratio.
      * Default: 1.2
@@ -113,6 +144,7 @@ export const createUserConfig = ({ app, path, activeWindow }: UserConfigCreatorA
         screenshotSearchRectangleMaxCount: 5,
         screenshotGiveUpRectangleMaxCount: 80,
         quoteFrom: "selectedText",
+        inputWindowPosition: "topLeft",
         DEBUG: false,
     };
 };

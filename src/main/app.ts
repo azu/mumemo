@@ -15,6 +15,7 @@ import { copySelectedText } from "./macos/Clipboard";
 import { OutputContentTemplateArgs, UserConfig } from "./Config";
 import activeWin from "active-win";
 import { resizeScreenShotFitCurrentScreenBound } from "./resize";
+import { sendKeyStroke } from "./macos/sendKeyStroke";
 
 // binary search for the first value in the array bigger than the given
 function upperBound(value: any, arr: any) {
@@ -217,9 +218,9 @@ export const run = async ({
         let clipboardText = "";
         if (config.autoFocus) {
             clipboardText = (await clipboardTextPromise) || "";
-            previewBrowser.show();
+            await previewBrowser.show(config);
         } else {
-            previewBrowser.showInactive();
+            previewBrowser.showInactive(config);
             clipboardText = (await clipboardTextPromise) || "";
         }
         // Update with Focus Image
@@ -269,6 +270,9 @@ export const run = async ({
         });
         const outputImageBase64 = await outputImage.getBase64Async("image/png");
         previewBrowser.updateImage(outputImageBase64);
+        if (config.sendKeyStrokeWhenReadyInputWindow) {
+            await sendKeyStroke(config.sendKeyStrokeWhenReadyInputWindow.key, config.sendKeyStrokeWhenReadyInputWindow);
+        }
         const input = await previewBrowser.waitForInput({
             imgSrc: outputImageBase64,
             autoSave: config.autoSave,
