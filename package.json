@@ -20,8 +20,7 @@
   },
   "electronWebpack": {
     "whiteListedModules": [
-      "codemirror",
-      "hypermd"
+      "codemirror"
     ]
   },
   "dependencies": {
@@ -37,7 +36,6 @@
     "execa": "^4.1.0",
     "flatbush": "^3.3.0",
     "gfm-escape": "^0.1.8",
-    "hypermd": "^0.3.11",
     "jimp": "^0.16.1",
     "markdown-escapes": "^1.0.4",
     "minimist": "^1.2.5",
