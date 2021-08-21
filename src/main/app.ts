@@ -80,7 +80,7 @@ const markdownEscaper = new GfmEscape();
 
 async function screenshot({
     windowId,
-    screenshotFileName,
+    screenshotFileName
 }: {
     windowId: string | undefined;
     screenshotFileName: string;
@@ -101,7 +101,7 @@ export type AppConfig = UserConfig & {
 export const run = async ({
     config,
     activeWindow,
-    abortSignal,
+    abortSignal
 }: {
     config: AppConfig;
     activeWindow: activeWin.Result;
@@ -123,7 +123,7 @@ export const run = async ({
         use<T extends string>(fileName: T): T {
             processingState.needCleanUpFiles.push(fileName);
             return fileName;
-        },
+        }
     };
     // on abort
     let isCanceled = false;
@@ -138,7 +138,7 @@ export const run = async ({
         processingState.clean();
     };
     abortSignal.addEventListener("abort", () => cancelTask(), {
-        once: true,
+        once: true
     });
     const race = <T extends any>(promise: Promise<T>): Promise<T> => {
         if (abortSignal.aborted) {
@@ -156,7 +156,7 @@ export const run = async ({
         const displayScaleFactor = currentScreen.scaleFactor;
         const temporaryScreenShot = tmp.fileSync({
             prefix: "mumemo",
-            postfix: ".png",
+            postfix: ".png"
         });
         const windowId = activeWindow.id;
         if (!windowId) {
@@ -167,7 +167,7 @@ export const run = async ({
         const screenshotSuccess = await race(
             screenshot({
                 screenshotFileName,
-                windowId: String(windowId),
+                windowId: String(windowId)
             })
         );
         // Some screenshot like `screencapture` command make larger size than display size.
@@ -191,10 +191,10 @@ export const run = async ({
                 DEBUG,
                 resizeSize: {
                     width: currentScreenSize.width * normalizedDisplayScaleFactor,
-                    height: currentScreenSize.height * normalizedDisplayScaleFactor,
+                    height: currentScreenSize.height * normalizedDisplayScaleFactor
                 },
                 screenshotFileName,
-                resizedScreenshotFileName,
+                resizedScreenshotFileName
             });
         }
         if (!screenshotSuccess) {
@@ -205,7 +205,7 @@ export const run = async ({
             : clipboard.readText());
         const rectangles = await race(
             getReactFromImage(resizedScreenshotFileName, {
-                debugOutputPath: DEBUG ? path.join(config.outputDir, "_debug-step2.png") : undefined,
+                debugOutputPath: DEBUG ? path.join(config.outputDir, "_debug-step2.png") : undefined
             })
         );
         // Fast Preview
@@ -236,7 +236,7 @@ export const run = async ({
             dayjs,
             owner,
             title,
-            id,
+            id
         }: {
             dayjs: Dayjs;
             owner: string;
@@ -250,7 +250,7 @@ export const run = async ({
                 id: shortid(),
                 dayjs: dayjs(),
                 owner: activeWindow?.owner.name ?? "unknown",
-                title: activeWindow?.title ?? "unknown",
+                title: activeWindow?.title ?? "unknown"
             })
         );
         const outputFileName = processingState.use(
@@ -266,7 +266,7 @@ export const run = async ({
             screenshotFileName: resizedScreenshotFileName,
             outputFileName,
             screenshotBoundRatio: config.screenshotBoundRatio,
-            config,
+            config
         });
         const outputImageBase64 = await outputImage.getBase64Async("image/png");
         previewBrowser.updateImage(outputImageBase64);
@@ -276,22 +276,22 @@ export const run = async ({
         const input = await previewBrowser.waitForInput({
             imgSrc: outputImageBase64,
             autoSave: config.autoSave,
-            timeoutMs: config.autoSaveTimeoutMs,
+            timeoutMs: config.autoSaveTimeoutMs
         });
         const inputContent: OutputContentTemplateArgs["inputContent"] = {
             raw: input,
-            value: markdownEscaper.escape(input),
+            value: markdownEscaper.escape(input)
         };
         const selectedContent: OutputContentTemplateArgs["selectedContent"] = {
             raw: clipboardText.trim(),
-            value: markdownEscaper.escape(clipboardText.trim()),
+            value: markdownEscaper.escape(clipboardText.trim())
         };
         fs.appendFileSync(
             path.join(config.outputDir, config.outputContentFileName),
             config.outputContentTemplate({
                 imgPath: path.join(config.outputImageDirPrefix, outputImageFileName),
                 inputContent,
-                selectedContent,
+                selectedContent
             }),
             "utf-8"
         );
