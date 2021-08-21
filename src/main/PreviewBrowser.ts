@@ -1,11 +1,9 @@
 import { BrowserWindow, ipcMain, clipboard, nativeImage } from "electron";
-import windowStateKeeper from "electron-window-state";
 import path from "path";
 import { format as formatUrl } from "url";
 import { Deferred } from "./Deferred";
 import { UserConfig } from "./Config";
-
-const Positioner = require("electron-positioner");
+import WinState from "electron-win-state";
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
@@ -17,9 +15,6 @@ export class PreviewBrowser {
     private focusAtOnce: boolean;
     private canceled: boolean;
     private timeoutId: NodeJS.Timeout | null;
-    private positioner: {
-        move(position: UserConfig["inputWindowPosition"]): void;
-    };
 
     get isDeactived() {
         return this.mainWindow === null;
@@ -40,7 +35,6 @@ export class PreviewBrowser {
 
     constructor() {
         this.mainWindow = this.createMainWindow();
-        this.positioner = new Positioner(this.mainWindow);
         this.closedDeferred = new Deferred<string>();
         this.focusAtOnce = false;
         this.canceled = false;
@@ -59,17 +53,16 @@ export class PreviewBrowser {
     }
 
     createMainWindow() {
-        const mainWindowState = windowStateKeeper({
+        const winState = new WinState({
             defaultWidth: 320,
             defaultHeight: 320,
+            dev: isDevelopment
         });
         const browserWindow = new BrowserWindow({
-            frame: false,
-            x: mainWindowState.x,
-            y: mainWindowState.y,
-            width: mainWindowState.width,
-            height: mainWindowState.height,
+            ...winState.winOptions,
             webPreferences: { nodeIntegration: true, webSecurity: true },
+            frame: false,
+            alwaysOnTop: true
         });
         if (isDevelopment) {
             browserWindow.loadURL(`http://localhost:${process.env.ELECTRON_WEBPACK_WDS_PORT}`);
@@ -78,7 +71,7 @@ export class PreviewBrowser {
                 formatUrl({
                     pathname: path.join(__dirname, "index.html"),
                     protocol: "file",
-                    slashes: true,
+                    slashes: true
                 })
             );
         }
@@ -93,7 +86,7 @@ export class PreviewBrowser {
         browserWindow.on("closed", () => {
             this.mainWindow = null;
         });
-        mainWindowState.manage(browserWindow);
+        winState.manage(browserWindow);
         return browserWindow;
     }
 
@@ -116,7 +109,7 @@ export class PreviewBrowser {
     async waitForInput({
         imgSrc,
         timeoutMs,
-        autoSave,
+        autoSave
     }: {
         imgSrc: string;
         timeoutMs: number;
@@ -133,7 +126,7 @@ export class PreviewBrowser {
         const onCopy = (_event: any, value: string) => {
             clipboard.write({
                 text: value,
-                image: nativeImage.createFromDataURL(imgSrc),
+                image: nativeImage.createFromDataURL(imgSrc)
             });
         };
         return new Promise((resolve, reject) => {
@@ -172,14 +165,12 @@ export class PreviewBrowser {
         if (this.mainWindow) {
             this.focusAtOnce = true;
             this.mainWindow.show();
-            this.positioner.move(config.inputWindowPosition);
         }
     }
 
     showInactive(config: UserConfig) {
         if (this.mainWindow) {
             this.mainWindow.showInactive();
-            this.positioner.move(config.inputWindowPosition);
         }
     }
 

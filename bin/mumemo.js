@@ -17,7 +17,7 @@ if (!electron) {
     } else {
         var spawn = require("child_process").spawn;
         spawn(require("electron"), [__filename].concat(process.argv.slice(2)), {
-            stdio: [0, 1, 2],
+            stdio: [0, 1, 2]
         }).on("close", function (code) {
             process.exit(code);
         });

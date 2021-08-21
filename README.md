@@ -153,25 +153,6 @@ module.exports.create = ({ app, path, activeWindow }) => {
    */
   quoteFrom: "clipboard" | "selectedText";
   /**
-   * Preview window position
-   * Default: topLeft
-   */
-  inputWindowPosition: `trayLeft`
-  | `trayBottomLeft`
-  | `trayRight`
-  | `trayBottomRight`
-  | `trayCenter`
-  | `trayBottomCenter`
-  | `topLeft`
-  | `topRight`
-  | `bottomLeft`
-  | `bottomRight`
-  | `topCenter`
-  | `bottomCenter`
-  | `leftCenter`
-  | `rightCenter`
-  | `center`;
-  /**
    * Send key stroke when ready to input window
    * Note: macOS only
    */

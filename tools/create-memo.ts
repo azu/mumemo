@@ -25,7 +25,7 @@ ${item.body.trim().length > 0 ? "> " + item.body.split("\n").join("\n> ") + "\n"
             .on("end", () => {
                 resolve({
                     images,
-                    output,
+                    output
                 });
             })
             .on("error", (error) => {
@@ -48,11 +48,11 @@ export const cli = meow(
     {
         flags: {
             output: {
-                type: "string",
-            },
+                type: "string"
+            }
         },
         autoHelp: true,
-        autoVersion: true,
+        autoVersion: true
     }
 );
 
@@ -65,10 +65,10 @@ export const run = async (
         throw new Error("Require --output");
     }
     fs.mkdirSync(outDir, {
-        recursive: true,
+        recursive: true
     });
     fs.mkdirSync(path.join(outDir, "img"), {
-        recursive: true,
+        recursive: true
     });
     const { output, images } = await convertNDJSONtoMemo(input[0]);
     // write readme
@@ -85,7 +85,7 @@ export const run = async (
     return {
         stdout: null,
         stderr: null,
-        exitStatus: 0,
+        exitStatus: 0
     };
 };
 if (!module.parent) {

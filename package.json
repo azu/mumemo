@@ -9,7 +9,8 @@
     "compile": "electron-webpack",
     "dist": "yarn compile && electron-builder",
     "dist:dir": "yarn dist --dir -c.compression=store -c.mac.identity=null",
-    "prettier": "prettier --write \"**/*.{js,jsx,ts,tsx,css}\""
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,css}\"",
+    "prepare": "git config --local core.hooksPath .githooks"
   },
   "build": {
     "productName": "mumemo",
@@ -31,8 +32,8 @@
     "codemirror": "^5.58.2",
     "dayjs": "^1.9.6",
     "electron-log": "^4.3.0",
-    "electron-positioner": "^4.1.0",
     "electron-store": "^6.0.1",
+    "electron-win-state": "^1.1.10",
     "execa": "^4.1.0",
     "flatbush": "^3.3.0",
     "gfm-escape": "^0.1.8",
@@ -44,7 +45,6 @@
     "pureimage": "^0.2.1",
     "sanitize-filename": "^1.6.3",
     "shortid": "^2.2.15",
-    "source-map-support": "^0.5.19",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
@@ -61,12 +61,10 @@
     "electron-builder": "^22.9.1",
     "electron-webpack": "^2.8.2",
     "electron-webpack-ts": "^4.0.1",
-    "electron-window-state": "^5.0.3",
-    "husky": "^4.3.0",
-    "lint-staged": "^10.5.1",
+    "lint-staged": "^11.1.2",
     "meow": "^8.0.0",
     "ndjson": "^2.0.0",
-    "prettier": "^2.1.2",
+    "prettier": "^2.3.2",
     "ts-node": "^9.0.0",
     "typescript": "^4.0.5",
     "webpack": "^4.44.2"
@@ -74,17 +72,12 @@
   "prettier": {
     "singleQuote": false,
     "printWidth": 120,
-    "tabWidth": 4
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
+    "tabWidth": 4,
+    "trailingComma": "none"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,css}": [
-      "prettier --write",
-      "git add"
+      "prettier --write"
     ]
   }
 }

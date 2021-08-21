@@ -52,7 +52,7 @@ const createInter = () => {
                     throw error;
                 }
             });
-        },
+        }
     };
 };
 
@@ -91,7 +91,7 @@ export async function calculateWrapperRect({
     debugContext,
     currentScreenSize,
     DEBUG,
-    config,
+    config
 }: {
     rects: getReactFromImageResult[];
     relativePoint: { x: number; y: number };
@@ -117,7 +117,7 @@ export async function calculateWrapperRect({
             x: rect.x - paddingX,
             y: rect.y - paddingY,
             width: rect.width + paddingX * 2,
-            height: rect.height + paddingY * 2,
+            height: rect.height + paddingY * 2
         };
     });
     if (boundRects.length > config.screenshotGiveUpRectangleMaxCount) {
@@ -129,8 +129,8 @@ export async function calculateWrapperRect({
                 minX: 0,
                 minY: 0,
                 maxX: currentScreenSize.width * displayScaleFactor,
-                maxY: currentScreenSize.height * displayScaleFactor,
-            },
+                maxY: currentScreenSize.height * displayScaleFactor
+            }
         };
     }
     for (const boundRect of boundRects) {
@@ -165,7 +165,7 @@ export async function calculateWrapperRect({
         minX: new Set<number>(),
         minY: new Set<number>(),
         maxX: new Set<number>(),
-        maxY: new Set<number>(),
+        maxY: new Set<number>()
     };
     const hitIdSet = new Set<number>();
     neighborIds.forEach((id) => {
@@ -218,7 +218,7 @@ export async function calculateWrapperRect({
         minX: Math.round(Math.min(...relatedBox.minX)),
         minY: Math.round(Math.min(...relatedBox.minY)),
         maxX: Math.round(Math.max(...relatedBox.maxX)),
-        maxY: Math.round(Math.max(...relatedBox.maxY)),
+        maxY: Math.round(Math.max(...relatedBox.maxY))
     };
     if (DEBUG) {
         debugContext.fillStyle = "rgba(0,255,255,0.5)";
@@ -230,7 +230,7 @@ export async function calculateWrapperRect({
         );
     }
     return {
-        wrapperRect: resultBox,
+        wrapperRect: resultBox
     };
 }
 
@@ -244,7 +244,7 @@ export const createFocusImage = async ({
     displayScaleFactor,
     screenshotBoundRatio,
     outputFileName,
-    config,
+    config
 }: {
     DEBUG: boolean;
     screenshotFileName: string;
@@ -294,7 +294,7 @@ export const createFocusImage = async ({
     });
     const relativePointCursorInScreen = {
         x: Math.abs(currentScreenBounce.x - currentAbsolutePoint.x * displayScaleFactor),
-        y: Math.abs(currentScreenBounce.y - currentAbsolutePoint.y * displayScaleFactor),
+        y: Math.abs(currentScreenBounce.y - currentAbsolutePoint.y * displayScaleFactor)
     };
     // Draw Cursor
     if (DEBUG) {
@@ -315,7 +315,7 @@ export const createFocusImage = async ({
         debugContext: context,
         debugImage,
         DEBUG: DEBUG,
-        config,
+        config
     });
     if (DEBUG) {
         context.fillStyle = "rgba(0,255,255,0.5)";
@@ -344,7 +344,7 @@ export const createFocusImage = async ({
     image.write(outputFileName);
     return {
         outputFilePath: outputFileName,
-        outputImage: image,
+        outputImage: image
     };
 };
 
@@ -378,7 +378,7 @@ export const getReactFromImage = async (imagePath: string, options: getReactFrom
                 area: area,
                 arcLength: arcLength,
                 minAreaRect,
-                rect: cv.boundingRect(contours.get(i)),
+                rect: cv.boundingRect(contours.get(i))
             });
             if (options.debugOutputPath) {
                 const contoursColor = new cv.Scalar(255, 0, 0, 255);
@@ -393,7 +393,7 @@ export const getReactFromImage = async (imagePath: string, options: getReactFrom
         new Jimp({
             width: src.cols,
             height: src.rows,
-            data: Buffer.from(src.data),
+            data: Buffer.from(src.data)
         }).write(options.debugOutputPath);
     }
     release();

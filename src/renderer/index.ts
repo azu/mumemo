@@ -64,8 +64,8 @@ const editor = CodeMirror.fromTextArea(textarea, {
         Enter: "newlineAndIndentContinueMarkdownList",
         "Cmd-Enter": function () {
             save();
-        },
-    },
+        }
+    }
 });
 
 ipcRenderer.on("reset", () => {

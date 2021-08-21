@@ -11,7 +11,7 @@ export async function resizeScreenShotFitCurrentScreenBound({
     screenshotFileName,
     resizedScreenshotFileName,
     resizeSize,
-    DEBUG,
+    DEBUG
 }: {
     screenshotFileName: string;
     resizedScreenshotFileName: string;

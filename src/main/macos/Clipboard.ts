@@ -43,7 +43,7 @@ const tryTask = (task: () => boolean, interval: number, count: number = 0): Prom
 
 export function copySelectedText(): Promise<string | undefined> {
     const modifiers = createModifier({
-        command: true,
+        command: true
     });
     const oldText = clipboard.readText();
     return run(
@@ -59,7 +59,7 @@ export function copySelectedText(): Promise<string | undefined> {
                 tryTask(() => {
                     return oldText !== clipboard.readText();
                 }, 16),
-                timeout(1000),
+                timeout(1000)
             ]);
         })
         .then(() => {

@@ -64,7 +64,7 @@ const appProcess = {
             await run({
                 config,
                 activeWindow,
-                abortSignal: appProcess.abortDeferred.signal,
+                abortSignal: appProcess.abortDeferred.signal
             });
         } catch (error) {
             if (error.message !== "Cancel") {
@@ -83,7 +83,7 @@ const appProcess = {
         appProcess.abortDeferred = new AbortController();
         appProcess.isProcessing = false;
         await timeout(16);
-    },
+    }
 };
 
 // let _appConfig: null | AppConfig = null;
@@ -131,13 +131,13 @@ const onReady = async (): Promise<any> => {
     const openDialogReturnValuePromise = (defaultDir?: string) => {
         const focusedWindow = new BrowserWindow({
             show: false,
-            alwaysOnTop: true,
+            alwaysOnTop: true
         });
         const options: OpenDialogOptions = {
             properties: ["openDirectory", "createDirectory"],
             title: "Select a output directory",
             defaultPath: defaultDir ?? path.join(app.getPath("documents")),
-            buttonLabel: "Save to here",
+            buttonLabel: "Save to here"
         };
         if (focusedWindow) {
             return dialog.showOpenDialog(focusedWindow, options);
@@ -172,7 +172,7 @@ const onReady = async (): Promise<any> => {
                 // 3. Default path
                 outputDir,
                 ...createUserConfig({ app, path, activeWindow: activeInfo }),
-                ...(userConfig.create ? userConfig.create({ app, path, activeWindow: activeInfo }) : {}),
+                ...(userConfig.create ? userConfig.create({ app, path, activeWindow: activeInfo }) : {})
             };
             appProcess.start(config, activeInfo);
         } catch (error) {
@@ -186,7 +186,7 @@ const onReady = async (): Promise<any> => {
     const tray = new Tray(path.join(__static, "tray.png"));
     const contextMenu = Menu.buildFromTemplate([
         {
-            label: `Output: ${outputDir}`,
+            label: `Output: ${outputDir}`
         },
         {
             label: `Change output directory`,
@@ -197,10 +197,10 @@ const onReady = async (): Promise<any> => {
                 }
                 outputDir = result.filePaths[0];
                 store.set("output-dir", outputDir);
-            },
+            }
         },
         {
-            type: "separator",
+            type: "separator"
         },
         {
             label: "Open content file",
@@ -212,22 +212,22 @@ const onReady = async (): Promise<any> => {
                 const config: AppConfig = {
                     ...createUserConfig({ app, path }),
                     ...(userConfig.create ? userConfig.create({ app, path, activeWindow: activeInfo }) : {}),
-                    outputDir,
+                    outputDir
                 };
                 const outputContentFileName = path.join(outputDir, config.outputContentFileName);
                 console.log("outputContentFileName", outputContentFileName);
                 await shell.openPath(outputContentFileName);
-            },
+            }
         },
         {
-            type: "separator",
+            type: "separator"
         },
         {
             label: "Quit",
             click: async () => {
                 app.exit(0);
-            },
-        },
+            }
+        }
     ]);
     tray.setToolTip("Mumemo");
     tray.setContextMenu(contextMenu);
