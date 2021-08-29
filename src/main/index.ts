@@ -1,16 +1,16 @@
 import { app, dialog, globalShortcut, Menu, Tray, shell, BrowserWindow } from "electron";
 import { timeout } from "./timeout";
 import activeWin from "active-win";
-import { createUserConfig, defaultShortcutKey } from "./Config";
+import { createUserConfig, defaultShortcutKey, MumemoConfigFile } from "./Config";
 import path from "path";
 import { AppConfig, run } from "./app";
 import * as fs from "fs";
 import AbortController from "abort-controller";
 import Store from "electron-store";
+import log from "electron-log";
 import OpenDialogOptions = Electron.OpenDialogOptions;
 
 const store = new Store();
-const log = require("electron-log");
 Object.assign(console, log.functions);
 // mumemo://
 app.setAsDefaultProtocolClient("mumemo");
@@ -127,7 +127,7 @@ const onReady = async (): Promise<any> => {
     }
     // FIXME: dynamic require
     // electron-webpack does not support require out of app
-    const userConfig = typeof userConfigPath === "string" ? eval(`require("${userConfigPath}")`) : {};
+    const userConfig: MumemoConfigFile = typeof userConfigPath === "string" ? eval(`require("${userConfigPath}")`) : {};
     const openDialogReturnValuePromise = (defaultDir?: string) => {
         const focusedWindow = new BrowserWindow({
             show: false,
@@ -157,30 +157,52 @@ const onReady = async (): Promise<any> => {
         throw new Error("outputDir is not found");
     }
     // Unregister a shortcut.
-    globalShortcut.unregister(userConfig.shortcutKey ?? defaultShortcutKey);
-    globalShortcut.register(userConfig.shortcutKey ?? defaultShortcutKey, () => {
-        try {
-            const activeInfo = activeWin.sync();
-            if (!activeInfo) {
-                console.error(new Error("Not found active window"));
-                return;
-            }
-            const outputDir = store.get("output-dir") || path.join(app.getPath("documents"), "mumemo");
-            const config: AppConfig = {
-                // 1. user config
-                // 2. store.get(output-dir)
-                // 3. Default path
-                outputDir,
-                ...createUserConfig({ app, path, activeWindow: activeInfo }),
-                ...(userConfig.create ? userConfig.create({ app, path, activeWindow: activeInfo }) : {})
-            };
-            appProcess.start(config, activeInfo);
-        } catch (error) {
-            console.log(
-                "mumemo requires the accessibility permission in “System Preferences › Security & Privacy › Privacy › Accessibility"
-            );
-            console.error(error);
+    const definedShortcutKeys: string[] = (() => {
+        if (!userConfig.shortcutKey) {
+            return [defaultShortcutKey];
         }
+        if (Array.isArray(userConfig.shortcutKey)) {
+            return userConfig.shortcutKey;
+        }
+        return [userConfig.shortcutKey];
+    })();
+    definedShortcutKeys.forEach((shortcutKey) => {
+        globalShortcut.unregister(shortcutKey);
+        globalShortcut.register(shortcutKey, () => {
+            try {
+                const activeInfo = activeWin.sync();
+                if (!activeInfo) {
+                    console.error(new Error("Not found active window"));
+                    return;
+                }
+                const outputDir = store.get("output-dir") || path.join(app.getPath("documents"), "mumemo");
+                if (typeof outputDir !== "string") {
+                    throw new Error("output-dir is not string");
+                }
+                const config: AppConfig = {
+                    // 1. user config
+                    // 2. store.get(output-dir)
+                    // 3. Default path
+                    outputDir,
+
+                    ...createUserConfig({ app, path, activeWindow: activeInfo, shortcutKey }),
+                    ...(userConfig.create
+                        ? userConfig.create({
+                              app,
+                              path,
+                              activeWindow: activeInfo,
+                              shortcutKey
+                          })
+                        : {})
+                };
+                appProcess.start(config, activeInfo);
+            } catch (error) {
+                console.log(
+                    "mumemo requires the accessibility permission in “System Preferences › Security & Privacy › Privacy › Accessibility"
+                );
+                console.error(error);
+            }
+        });
     });
     // @ts-ignore
     const tray = new Tray(path.join(__static, "tray.png"));

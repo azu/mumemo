@@ -91,7 +91,17 @@ export type UserConfig = {
      */
     screenshotResizeFactor?: number;
 };
-export type UserConfigCreatorArgs = { app: Electron.App; path: typeof path; activeWindow?: activeWin.Result };
+export type MumemoConfigFile = {
+    shortcutKey?: string | string[];
+    create?: (args: UserConfigCreatorArgs) => UserConfig;
+};
+export type UserConfigCreatorArgs = {
+    app: Electron.App;
+    path: typeof path;
+    activeWindow?: activeWin.Result | {};
+    // What shortcut key is pressed
+    shortcutKey?: string;
+};
 export type OutputContentTemplateArgs = {
     imgPath: string;
     selectedContent: {
