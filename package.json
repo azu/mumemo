@@ -43,6 +43,7 @@
     "pureimage": "^0.2.1",
     "sanitize-filename": "^1.6.3",
     "shortid": "^2.2.15",
+    "source-map-support": "^0.5.19",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
