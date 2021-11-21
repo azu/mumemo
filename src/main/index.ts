@@ -10,6 +10,7 @@ import Store from "electron-store";
 import log from "electron-log";
 import OpenDialogOptions = Electron.OpenDialogOptions;
 
+require('@electron/remote/main').initialize();
 const store = new Store();
 Object.assign(console, log.functions);
 // mumemo://

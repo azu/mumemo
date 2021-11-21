@@ -26,7 +26,7 @@ export class PreviewBrowser {
         }
         const instance = new PreviewBrowser();
         return new Promise((resolve) => {
-            instance.mainWindow?.webContents.on("did-finish-load", function () {
+            instance.mainWindow?.webContents.on("did-finish-load", function() {
                 _PreviewBrowser = instance;
                 resolve(_PreviewBrowser);
             });
@@ -60,7 +60,7 @@ export class PreviewBrowser {
         });
         const browserWindow = new BrowserWindow({
             ...winState.winOptions,
-            webPreferences: { nodeIntegration: true, webSecurity: true },
+            webPreferences: { nodeIntegration: true, contextIsolation: false },
             frame: false,
             alwaysOnTop: true
         });
@@ -87,6 +87,7 @@ export class PreviewBrowser {
             this.mainWindow = null;
         });
         winState.manage(browserWindow);
+        require("@electron/remote/main").enable(browserWindow.webContents);
         return browserWindow;
     }
 
@@ -107,10 +108,10 @@ export class PreviewBrowser {
 
     // resolve this promise then save text
     async waitForInput({
-        imgSrc,
-        timeoutMs,
-        autoSave
-    }: {
+                           imgSrc,
+                           timeoutMs,
+                           autoSave
+                       }: {
         imgSrc: string;
         timeoutMs: number;
         autoSave: boolean;
