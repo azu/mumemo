@@ -33,7 +33,7 @@ function upperBound(value: any, arr: any) {
 }
 
 // @ts-ignore
-Flatbush.prototype.overlap = function (this: Flatbush, minX: number, minY: number, maxX: number, maxY: number) {
+Flatbush.prototype.overlap = function(this: Flatbush, minX: number, minY: number, maxX: number, maxY: number) {
     // @ts-ignore
     let nodeIndex = this._boxes.length - 4;
     const queue: number[] = [];
@@ -79,9 +79,9 @@ const markdownEscaper = new GfmEscape();
 // fnt.load(() => {});
 
 async function screenshot({
-    windowId,
-    screenshotFileName
-}: {
+                              windowId,
+                              screenshotFileName
+                          }: {
     windowId: string | undefined;
     screenshotFileName: string;
 }): Promise<boolean> {
@@ -99,10 +99,10 @@ export type AppConfig = UserConfig & {
     outputDir: string;
 };
 export const run = async ({
-    config,
-    activeWindow,
-    abortSignal
-}: {
+                              config,
+                              activeWindow,
+                              abortSignal
+                          }: {
     config: AppConfig;
     activeWindow: activeWin.Result;
     abortSignal: AbortSignal;
@@ -233,11 +233,11 @@ export const run = async ({
             return sanitize(spaceToUnderBar);
         };
         const createOutputImageFileName = ({
-            dayjs,
-            owner,
-            title,
-            id
-        }: {
+                                               dayjs,
+                                               owner,
+                                               title,
+                                               id
+                                           }: {
             dayjs: Dayjs;
             owner: string;
             title: string;
@@ -295,7 +295,7 @@ export const run = async ({
             }),
             "utf-8"
         );
-    } catch (error) {
+    } catch (error: any) {
         if (config.DEBUG) {
             console.log(error.message);
         }

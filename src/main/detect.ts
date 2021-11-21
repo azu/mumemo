@@ -70,7 +70,7 @@ function readPureImage(fileName: string): Promise<any> {
 }
 
 export function writePureImage<T extends any>(debugImage: T, fileName: string) {
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
         PImage.encodePNGToStream(debugImage, fs.createWriteStream(fileName))
             .then(() => {
                 console.log("done writing", fileName);

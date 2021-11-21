@@ -66,7 +66,7 @@ const appProcess = {
                 activeWindow,
                 abortSignal: appProcess.abortDeferred.signal
             });
-        } catch (error) {
+        } catch (error: any) {
             if (error.message !== "Cancel") {
                 console.error(error);
             }
@@ -188,11 +188,11 @@ const onReady = async (): Promise<any> => {
                     ...createUserConfig({ app, path, activeWindow: activeInfo, shortcutKey }),
                     ...(userConfig.create
                         ? userConfig.create({
-                              app,
-                              path,
-                              activeWindow: activeInfo,
-                              shortcutKey
-                          })
+                            app,
+                            path,
+                            activeWindow: activeInfo,
+                            shortcutKey
+                        })
                         : {})
                 };
                 appProcess.start(config, activeInfo);

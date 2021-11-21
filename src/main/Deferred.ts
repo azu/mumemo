@@ -1,6 +1,6 @@
 export class Deferred<T extends any> {
     promise: Promise<T>;
-    private _resolve!: (value?: T) => void;
+    private _resolve!: (value: T) => void;
     private _reject!: (reason?: Error) => void;
 
     constructor() {
@@ -10,7 +10,7 @@ export class Deferred<T extends any> {
         });
     }
 
-    resolve(value?: any) {
+    resolve(value: T) {
         this._resolve(value);
     }
 
