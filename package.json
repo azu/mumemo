@@ -16,7 +16,16 @@
     "productName": "mumemo",
     "appId": "info.efcl.mumemo",
     "asar": true,
-    "npmRebuild": false
+    "npmRebuild": false,
+    "mac": {
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extendInfo": {
+        "NSAppleEventsUsageDescription": "Please allow access to script browser applications to detect the current URL when triggering instant lookup."
+      }
+    }
   },
   "electronWebpack": {
     "whiteListedModules": [
