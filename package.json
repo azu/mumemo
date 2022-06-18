@@ -74,8 +74,8 @@
     "meow": "^8.0.0",
     "ndjson": "^2.0.0",
     "prettier": "^2.4.1",
-    "ts-node": "^10.8.1",
-    "typescript": "^4.7.4",
+    "ts-node": "~10.5.0",
+    "typescript": "~4.6.4",
     "webpack": "^4.44.2"
   },
   "prettier": {
