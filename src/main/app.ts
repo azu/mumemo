@@ -33,7 +33,7 @@ function upperBound(value: any, arr: any) {
 }
 
 // @ts-ignore
-Flatbush.prototype.overlap = function(this: Flatbush, minX: number, minY: number, maxX: number, maxY: number) {
+Flatbush.prototype.overlap = function (this: Flatbush, minX: number, minY: number, maxX: number, maxY: number) {
     // @ts-ignore
     let nodeIndex = this._boxes.length - 4;
     const queue: number[] = [];
@@ -79,9 +79,9 @@ const markdownEscaper = new GfmEscape();
 // fnt.load(() => {});
 
 async function screenshot({
-                              windowId,
-                              screenshotFileName
-                          }: {
+    windowId,
+    screenshotFileName
+}: {
     windowId: string | undefined;
     screenshotFileName: string;
 }): Promise<boolean> {
@@ -99,10 +99,10 @@ export type AppConfig = UserConfig & {
     outputDir: string;
 };
 export const run = async ({
-                              config,
-                              activeWindow,
-                              abortSignal
-                          }: {
+    config,
+    activeWindow,
+    abortSignal
+}: {
     config: AppConfig;
     activeWindow: activeWin.Result;
     abortSignal: AbortSignal;
@@ -200,9 +200,14 @@ export const run = async ({
         if (!screenshotSuccess) {
             return;
         }
-        const clipboardTextPromise = await (config.quoteFrom === "selectedText"
-            ? copySelectedText()
-            : clipboard.readText());
+        const transformClipboard =
+            config.transformClipboard ||
+            function (text: string) {
+                return text;
+            };
+        const clipboardTextPromise = transformClipboard(
+            (await (config.quoteFrom === "selectedText" ? copySelectedText() : clipboard.readText())) ?? ""
+        );
         const rectangles = await race(
             getReactFromImage(resizedScreenshotFileName, {
                 debugOutputPath: DEBUG ? path.join(config.outputDir, "_debug-step2.png") : undefined
@@ -217,11 +222,11 @@ export const run = async ({
         // get clipboard text and show window as interactive
         let clipboardText = "";
         if (config.autoFocus) {
-            clipboardText = (await clipboardTextPromise) || "";
+            clipboardText = clipboardTextPromise || "";
             await previewBrowser.show(config);
         } else {
             previewBrowser.showInactive(config);
-            clipboardText = (await clipboardTextPromise) || "";
+            clipboardText = clipboardTextPromise || "";
         }
         // Update with Focus Image
         const sanitizeFileName = (name: string): string => {
@@ -233,11 +238,11 @@ export const run = async ({
             return sanitize(spaceToUnderBar);
         };
         const createOutputImageFileName = ({
-                                               dayjs,
-                                               owner,
-                                               title,
-                                               id
-                                           }: {
+            dayjs,
+            owner,
+            title,
+            id
+        }: {
             dayjs: Dayjs;
             owner: string;
             title: string;

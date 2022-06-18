@@ -52,6 +52,11 @@ export type UserConfig = {
      */
     quoteFrom: "clipboard" | "selectedText";
     /**
+     * If want to transform clipboard, pass the transform function
+     * @param text
+     */
+    transformClipboard?: (text: string) => string;
+    /**
      * Send key stroke when ready to input window
      * Note: macOS only
      */
