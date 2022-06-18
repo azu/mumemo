@@ -3,10 +3,10 @@ import path from "path";
 import { AppConfig } from "./app";
 import fs from "fs";
 import Flatbush from "flatbush";
-// @ts-expect-error
-import PImage from "pureimage";
+import * as PImage from "pureimage";
 // @ts-expect-error
 import { cv } from "opencv-wasm";
+import { Bitmap } from "pureimage/types/bitmap";
 // add overlap
 declare type FlatbushAddtional = {
     overlap(this: Flatbush, minX: number, minY: number, maxX: number, maxY: number): number[];
@@ -69,7 +69,7 @@ function readPureImage(fileName: string): Promise<any> {
     });
 }
 
-export function writePureImage<T extends any>(debugImage: T, fileName: string) {
+export function writePureImage<T extends Bitmap>(debugImage: T, fileName: string) {
     return new Promise<void>((resolve, reject) => {
         PImage.encodePNGToStream(debugImage, fs.createWriteStream(fileName))
             .then(() => {
@@ -258,6 +258,7 @@ export const createFocusImage = async ({
     config: AppConfig;
 }) => {
     const img = await readPureImage(screenshotFileName);
+    // @ts-expect-error: wrong type
     const debugImage = DEBUG ? PImage.make(img.width, img.height) : ({} as any);
     const context = DEBUG ? debugImage.getContext("2d") : ({} as any);
     if (DEBUG) {

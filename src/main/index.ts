@@ -5,12 +5,11 @@ import { createUserConfig, defaultShortcutKey, MumemoConfigFile } from "./Config
 import path from "path";
 import { AppConfig, run } from "./app";
 import * as fs from "fs";
-import AbortController from "abort-controller";
 import Store from "electron-store";
 import log from "electron-log";
 import OpenDialogOptions = Electron.OpenDialogOptions;
 
-require('@electron/remote/main').initialize();
+require("@electron/remote/main").initialize();
 const store = new Store();
 Object.assign(console, log.functions);
 // mumemo://
@@ -189,11 +188,11 @@ const onReady = async (): Promise<any> => {
                     ...createUserConfig({ app, path, activeWindow: activeInfo, shortcutKey }),
                     ...(userConfig.create
                         ? userConfig.create({
-                            app,
-                            path,
-                            activeWindow: activeInfo,
-                            shortcutKey
-                        })
+                              app,
+                              path,
+                              activeWindow: activeInfo,
+                              shortcutKey
+                          })
                         : {})
                 };
                 appProcess.start(config, activeInfo);
