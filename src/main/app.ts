@@ -148,7 +148,9 @@ export const run = async ({
         return promise as Promise<T>;
     };
     try {
+        let now = Date.now();
         const DEBUG = config.DEBUG;
+        DEBUG && console.log(`${Date.now() - now}ms`, (now = Date.now()), "start");
         const currentAbsolutePoint = screen.getCursorScreenPoint();
         const currentScreen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
         const currentScreenSize = currentScreen.size;
@@ -158,6 +160,7 @@ export const run = async ({
             prefix: "mumemo",
             postfix: ".png"
         });
+        DEBUG && console.log(`${Date.now() - now}ms`, (now = Date.now()), "tmp");
         const windowId = activeWindow.id;
         if (!windowId) {
             console.error("Not found active window id");
@@ -170,6 +173,33 @@ export const run = async ({
                 windowId: String(windowId)
             })
         );
+        DEBUG && console.log(`${Date.now() - now}ms`, (now = Date.now()), "screenshot");
+        // show editor
+        const transformClipboard =
+            config.transformClipboard ||
+            function (text: string) {
+                return text;
+            };
+        const clipboardTextPromise = transformClipboard(
+            (await (config.quoteFrom === "selectedText" ? copySelectedText() : clipboard.readText())) ?? ""
+        );
+        // Fast Preview
+        const previewBrowser = await PreviewBrowser.instance();
+        previewBrowser.reset();
+        DEBUG && console.log(`${Date.now() - now}ms`, (now = Date.now()), "browser instance");
+        const firstImage = await Jimp.read(screenshotFileName);
+        const firstImageBase64 = await firstImage.getBase64Async("image/png");
+        previewBrowser.edit(``, firstImageBase64);
+        DEBUG && console.log(`${Date.now() - now}ms`, (now = Date.now()), "first view edit");
+        // get clipboard text and show window as interactive
+        let clipboardText = "";
+        if (config.autoFocus) {
+            clipboardText = clipboardTextPromise || "";
+            await previewBrowser.show(config);
+        } else {
+            previewBrowser.showInactive(config);
+            clipboardText = clipboardTextPromise || "";
+        }
         // Some screenshot like `screencapture` command make larger size than display size.
         // Resize to fit display size to reduce tasks
         const resizedScreenshotFileName = DEBUG
@@ -183,8 +213,9 @@ export const run = async ({
             config.screenshotResizeFactor !== undefined && config.screenshotResizeFactor !== displayScaleFactor;
         // if user does not configure valid factor, skip it
         if (DEBUG) {
-            console.log("normalizedDisplayScaleFactor", normalizedDisplayScaleFactor, " vs ", displayScaleFactor);
-            console.log("shouldResize", shouldResize);
+            DEBUG &&
+                console.log("normalizedDisplayScaleFactor", normalizedDisplayScaleFactor, " vs ", displayScaleFactor);
+            DEBUG && console.log("shouldResize", shouldResize);
         }
         if (shouldResize) {
             await resizeScreenShotFitCurrentScreenBound({
@@ -197,37 +228,16 @@ export const run = async ({
                 resizedScreenshotFileName
             });
         }
+        DEBUG && console.log(`${Date.now() - now}ms`, (now = Date.now()), "resize");
         if (!screenshotSuccess) {
             return;
         }
-        const transformClipboard =
-            config.transformClipboard ||
-            function (text: string) {
-                return text;
-            };
-        const clipboardTextPromise = transformClipboard(
-            (await (config.quoteFrom === "selectedText" ? copySelectedText() : clipboard.readText())) ?? ""
-        );
+
         const rectangles = await race(
             getReactFromImage(resizedScreenshotFileName, {
                 debugOutputPath: DEBUG ? path.join(config.outputDir, "_debug-step2.png") : undefined
             })
         );
-        // Fast Preview
-        const previewBrowser = await PreviewBrowser.instance();
-        previewBrowser.reset();
-        const firstImage = await Jimp.read(resizedScreenshotFileName);
-        const firstImageBase64 = await firstImage.getBase64Async("image/png");
-        previewBrowser.edit(``, firstImageBase64);
-        // get clipboard text and show window as interactive
-        let clipboardText = "";
-        if (config.autoFocus) {
-            clipboardText = clipboardTextPromise || "";
-            await previewBrowser.show(config);
-        } else {
-            previewBrowser.showInactive(config);
-            clipboardText = clipboardTextPromise || "";
-        }
         // Update with Focus Image
         const sanitizeFileName = (name: string): string => {
             const homedir = os.homedir();
@@ -302,7 +312,7 @@ export const run = async ({
         );
     } catch (error: any) {
         if (config.DEBUG) {
-            console.log(error.message);
+            DEBUG && console.log(error.message);
         }
         // when occur error{timeout,cancel}, cleanup it and suppress error
         await cancelTask();
